@@ -1,0 +1,1 @@
+# One name per line: people or firms that must never appear in any output.

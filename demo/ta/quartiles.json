@@ -1,0 +1,20 @@
+[
+ {
+  "year": "2024-25",
+  "group": "London",
+  "measure": "gross",
+  "lower_quartile": 16360.0,
+  "median": 20940.0,
+  "upper_quartile": 25460.0,
+  "councils": 23
+ },
+ {
+  "year": "2024-25",
+  "group": "Rest of England",
+  "measure": "gross",
+  "lower_quartile": 9880.0,
+  "median": 16670.0,
+  "upper_quartile": 21880.0,
+  "councils": 159
+ }
+]

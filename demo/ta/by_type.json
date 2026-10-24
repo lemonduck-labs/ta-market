@@ -1,0 +1,44 @@
+[
+ {
+  "year": "2024-25",
+  "type": "Bed and breakfast",
+  "households": 17280,
+  "gross": 711665377.0,
+  "gross_per_household": 41180.0
+ },
+ {
+  "year": "2024-25",
+  "type": "Nightly-paid, self-contained",
+  "households": 39771,
+  "gross": 1070834360.0,
+  "gross_per_household": 26920.0
+ },
+ {
+  "year": "2024-25",
+  "type": "Hostels",
+  "households": 6734,
+  "gross": 101833025.0,
+  "gross_per_household": 15120.0
+ },
+ {
+  "year": "2024-25",
+  "type": "Private sector leased",
+  "households": 26613,
+  "gross": 562751690.0,
+  "gross_per_household": 21150.0
+ },
+ {
+  "year": "2024-25",
+  "type": "Council or housing association stock",
+  "households": 29441,
+  "gross": 124118546.0,
+  "gross_per_household": 4220.0
+ },
+ {
+  "year": "2024-25",
+  "type": "Other",
+  "households": 5396,
+  "gross": 81303640.0,
+  "gross_per_household": 15070.0
+ }
+]

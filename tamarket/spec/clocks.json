@@ -1,0 +1,168 @@
+{
+ "spec_version": "1",
+ "about": "Statutory clocks the planner watches on synthetic records: when each notice is due, when a family in bed and breakfast reaches six weeks, and when a review decision is due. Each rule quotes the words that set its period, as legislation.gov.uk gives them; where a list follows, the dash before it is left out and an omission is marked with an ellipsis. A period of N days 'beginning with' a day ends on that day plus N - 1. Python is the reference (tamarket/clocks.py); clocks.mjs must give the same answers on the cases below.",
+ "status": "Dates for an officer to act on, worked out from the record. The officer decides and records what was done; the planner sends nothing.",
+ "read_on": "22 October 2026",
+ "rules": {
+  "s208": {
+   "title": "Notice to the council where the household is placed (Housing Act 1996, s.208(2) to (4))",
+   "applies": "the record says the household is placed in another council’s district",
+   "from": "placed_on",
+   "days": 14,
+   "words": "must be given before the end of the period of 14 days beginning with the day on which the accommodation was made available",
+   "contents": ["the applicant’s name", "the number and description of the other people who normally live with them as members of the family, or might reasonably be expected to", "the address of the accommodation", "the date on which it was made available", "which function under Part 7 the council is discharging"],
+   "citation": "Housing Act 1996, s.208(3) and (4), read on legislation.gov.uk on 22 October 2026",
+   "url": "https://www.legislation.gov.uk/ukpga/1996/52/section/208"
+  },
+  "child": {
+   "title": "Notice to a child’s GP practice, health visiting service and school (Housing Act 1996, s.213AA)",
+   "applies": "the household includes a child (anyone under 18, so a 16 or 17 year old applicant too) and the council secured the accommodation under Part 7, \"unless securing that such accommodation is available means the authority ceases to be subject to the duty under section 193\" (s.213AA(1)); the duty does not apply where the application was made before 1 September 2026",
+   "in_force": "2026-09-01",
+   "bodies": ["gp", "health_visiting", "education"],
+   "body_labels": {"gp": "GP practice where the child is registered", "health_visiting": "Health visiting service for the area", "education": "School or other educational institution where the child is registered"},
+   "days": 14,
+   "words": "the authority must take reasonable steps to notify each relevant body applicable to the child within 14 days beginning with the latest of (a) the day on which the authority receives agreement, (b) the day on which the information about the relevant body is provided to the authority, and (c) the day on which the child is placed in accommodation",
+   "words_ref": "s.213AA(4)",
+   "agreement": "The council must first ask the child’s parent to agree to it notifying each relevant body applicable to the child, and for information about those bodies; a 16 or 17 year old applicant living independently is asked instead (s.213AA(3)).",
+   "agreement_default": "Agreement to some bodies only: the section speaks of one agreement; the planner records the answer body by body and tracks each body agreed to within the same 14 days, as a default [Likely]. No notice goes to a body not agreed.",
+   "per_child": "The duty and the notices are for each child: s.213AA(1) speaks of accommodation \"for occupation by a child\", and the DHSC guidance says \"A notification will be issued for each child placed in temporary accommodation.\" The planner keeps an agreement for each child and a notice for each child and body.",
+   "info_per_body": "The 14 days for a body run from the information about that body (s.213AA(4)(b)), so the planner keeps the date the information about each body arrived, child by child.",
+   "once": "The agreement and notification duties arise once for each application.",
+   "young_applicant": "The planner counts a 16 or 17 year old applicant as a child when the record's priority need says so. One recorded under another priority need (dependent children, say, or a pregnancy) is a child here too; and if a young applicant lives with a parent, ask the parent (s.213AA(2)), as s.213AA(3) covers only one \"living independently from their parents\".",
+   "max_children": 9,
+   "initial_placement": "MHCLG's information note says the duty arises \"at the point of initial placement\". The synthetic records hold one placement each, so the placement date is the initial placement; with real records the planner would need the first placement under the application.",
+   "contents": {
+    "about": "What each body's notice says, line by line: notice is the text the officer sends ({...} marks a detail added in a council deployment; draft_applicant is the line used when the child is a 16 or 17 year old applicant), basis is why the line is there, and officer_notes go with the draft but are not part of the notice. The planner builds every draft from this list.",
+    "gp": {
+     "notice": [
+      {
+       "draft": "Council reference: {reference}",
+       "basis": "the planner's reading [Likely]: the body needs a reference to reply to; it carries no household detail"
+      },
+      {
+       "draft": "Child: {child’s name and date of birth}",
+       "basis": "the planner's reading [Likely]: the GP section lists no contents, and a practice needs to know which child"
+      },
+      {
+       "draft": "The council has secured accommodation for the child under Part 7 of the Housing Act 1996.",
+       "basis": "s.213AA(2)(a): notice \"that accommodation has been secured for the child\""
+      }
+     ],
+     "officer_notes": [
+      "No address: the DHSC guidance says \"Notifications will not include the new temporary address.\"",
+      "If the child has no GP practice: the guidance says \"Where a child is not identified as registered with a GP practice, the housing authority will provide information on how to register with a GP.\" Give the family that information, and record \"No such body\" for this notice."
+     ]
+    },
+    "health_visiting": {
+     "notice": [
+      {
+       "draft": "Council reference: {reference}",
+       "basis": "the planner's reading [Likely]: the body needs a reference to reply to; it carries no household detail"
+      },
+      {
+       "draft": "Child: {child’s name and date of birth}",
+       "basis": "DHSC: \"the child’s name and date of birth\""
+      },
+      {
+       "draft": "The child is now housed in temporary accommodation secured by the council under Part 7 of the Housing Act 1996.",
+       "basis": "DHSC: \"confirmation that the child is now housed in temporary accommodation\""
+      },
+      {
+       "draft": "The family’s address in temporary accommodation, with postcode: {address and postcode}",
+       "basis": "DHSC: \"the family’s address (including postcode) in temporary accommodation\""
+      },
+      {
+       "draft": "A contact number for the child’s parent: {contact number}",
+       "draft_applicant": "The applicant’s own contact number: {the applicant’s contact number}",
+       "basis": "DHSC: \"a contact number for the child’s parent\"; for a 16 or 17 year old applicant, their own (see officer_notes)"
+      },
+      {
+       "draft": "The name of the person reachable on that number: {name}",
+       "draft_applicant": "The applicant’s own name: {the applicant’s name}",
+       "basis": "DHSC: \"the name of the person reachable via the contact number\"; for a 16 or 17 year old applicant, their own (see officer_notes)"
+      }
+     ],
+     "officer_notes": [
+      "The DHSC guidance: \"(where a homelessness applicant is 16 or 17 years of age, or it is the child who is pregnant, it should be their own name and contact number provided as part of a notification, rather than the relevant details of a relative).\" If the child is pregnant, change the last two lines of the notice to the child’s own contact number and name, not a relative’s."
+     ]
+    },
+    "education": {
+     "notice": [
+      {
+       "draft": "Council reference: {reference}",
+       "basis": "the planner's reading [Likely]: the body needs a reference to reply to; it carries no household detail"
+      },
+      {
+       "draft": "Child: {child’s name and date of birth}",
+       "basis": "the planner's reading [Likely]: a school needs to know which child; no guidance read lists what a school notice contains"
+      },
+      {
+       "draft": "The council has secured accommodation for the child under Part 7 of the Housing Act 1996.",
+       "basis": "s.213AA(2)(a): notice \"that accommodation has been secured for the child\""
+      }
+     ],
+     "officer_notes": [
+      "No address: neither the section nor the guidance read (the MHCLG information note, and Keeping children safe in education 2026, Part one, which describes the duty) says what a school notice contains, so this draft gives only what the section requires [Likely]."
+     ]
+    }
+   },
+   "contents_source": {"title": "Temporary accommodation notification duty: Department of Health and Social Care guidance to GP practices and health visiting services (published 1 September 2026; sections GP practices, and Health visiting: notifications and what they should contain), read on GOV.UK on 22 October 2026", "url": "https://www.gov.uk/government/publications/temporary-accommodation-notification-duty/temporary-accommodation-notification-duty-department-of-health-and-social-care-guidance-to-gp-practices-and-health-visiting-services"},
+   "citation": "Housing Act 1996, s.213AA, inserted by the Children's Wellbeing and Schools Act 2026, s.11, in force 1 September 2026; read on legislation.gov.uk on 22 October 2026",
+   "url": "https://www.legislation.gov.uk/ukpga/2026/21/section/11"
+  },
+  "bnb_family": {
+   "title": "Six weeks in bed and breakfast for a family (SI 2003/3326)",
+   "applies": "the record raises the check on the six-week limit for families in bed and breakfast",
+   "from": "placed_on",
+   "days": 42,
+   "counts": "6 weeks beginning with the day of the placement: the last day within them is the placement day plus 41, the day to move by; from the next day 6 weeks are reached.",
+   "words": "(a) where no accommodation other than B&B accommodation is available for occupation by an applicant with family commitments; and (b) the applicant occupies B&B accommodation for a period, or a total of periods, which does not exceed 6 weeks",
+   "words_ref": "article 4(1), the exception to article 3, under which B&B accommodation is not to be regarded as suitable for an applicant with family commitments",
+   "limit_label": "move by",
+   "limit_note": "the planner's count, a day on the safe side: the Order sets no counting rule, and counted in nights a family placed on a day may stay until the morning 42 days later",
+   "note": "A total of periods counts, so an earlier stay in B&B adds to the clock; the synthetic records hold one placement each.",
+   "leaves_out": "The clock leaves out what the record cannot show: article 4(2) leaves out of the count any period before 1 April 2004 and, where the council became subject to the s.193 duty by virtue of s.200(4), any period before then (Code 17.41: \"disregarded in calculating the 6 week period\"); after \"a significant change in an applicant’s circumstances that would bring the applicant within the scope of the 2003 Order\" (that is, makes them an applicant with family commitments: a pregnancy, or a child joining the household), the 6 weeks \"should start from the date the authority was informed of the change of circumstances\" (Code 17.40); a change for a family already within the Order does not restart them [Likely]. The date to move by is a limit, never permission to stay: B&B for a family is for use \"only as a last resort and then only for a maximum of 6 weeks\" (Code 17.35), and article 4(1)(a) allows it only where nothing else is available.",
+   "code": {"title": "Homelessness code of guidance, chapter 17, paragraphs 17.35, 17.40 and 17.41, read on GOV.UK on 22 October 2026", "url": "https://www.gov.uk/guidance/homelessness-code-of-guidance-for-local-authorities/chapter-17-suitability-of-accommodation"},
+   "citation": "The Homelessness (Suitability of Accommodation) (England) Order 2003 (SI 2003/3326), articles 3 and 4, read on legislation.gov.uk on 22 October 2026",
+   "url": "https://www.legislation.gov.uk/uksi/2003/3326/contents/made"
+  },
+  "review": {
+   "title": "Decision on a review (Housing Act 1996, s.202; SI 2018/223, reg. 9)",
+   "applies": "the applicant has asked for a review whose decision is due in eight weeks: one listed in reg. 9(1)(b), such as a review under s.202(1)(f) of the suitability of accommodation offered; reviews due in three, ten or twelve weeks (reg. 9(1)(a), (c) and (d)) are not tracked by this clock",
+   "from": "requested_on",
+   "days": 56,
+   "words": "eight weeks beginning with the day on which the request for the review is made, … or within such longer period as A and the reviewer may agree in writing",
+   "words_ref": "reg. 9(1)(b) and the closing words of reg. 9(1); A is the applicant",
+   "covers": "This clock covers reviews decided in eight weeks (reg. 9(1)(b)): a review under s.202(1)(a), (b), (ba)(ii) or (c) to (h), such as the duty owed (s.202(1)(b)) or the suitability of accommodation offered (s.202(1)(f)), and one under s.202(1)(bb) where the notice ends the relief duty. It does not track a review decided in three weeks (reg. 9(1)(a): under s.202(1)(ba)(i) or (bc), the steps under the relief or prevention duty or a notice ending the prevention duty, or under s.202(1)(bb) where the notice ends the prevention duty), in ten weeks (reg. 9(1)(c): a s.202(1)(d) review carried out by both authorities) or in twelve weeks (reg. 9(1)(d): a case within regulation 6).",
+   "interim": "The suitability of interim accommodation has no review under s.202(1)(f): Code 17.67 says applicants may ask for a review of a decision that accommodation offered is suitable \"under section 202(1)(f), although this right does not apply in the case of interim accommodation secured under sections 188, 190, 200(1), 204(4).\" The household can still ask for other s.202 reviews: those decided in eight weeks (reg. 9(1)(b)), such as a review of the duty owed (s.202(1)(b)), can be tracked here; a review of the steps under the relief or prevention duty (s.202(1)(ba)(i) or (bc)) is decided in three weeks (reg. 9(1)(a)) and is not.",
+   "interim_source": {"title": "Homelessness code of guidance, chapter 17, paragraph 17.67, read on GOV.UK on 22 October 2026", "url": "https://www.gov.uk/guidance/homelessness-code-of-guidance-for-local-authorities/chapter-17-suitability-of-accommodation"},
+   "citation": "The Homelessness (Review Procedure etc.) Regulations 2018 (SI 2018/223), reg. 9(1), read on legislation.gov.uk on 22 October 2026",
+   "url": "https://www.legislation.gov.uk/uksi/2018/223/regulation/9/made"
+  },
+  "soon_days": 14
+ },
+ "cases": [
+  {"id": "k01", "what": "s.208: the last day is 13 days after the placement", "fn": "s208", "record": {"placed_in_another_district": true, "placed_on": "2026-10-01"}, "today": "2026-10-10", "expect": {"applies": true, "due": "2026-10-14", "state": "due"}},
+  {"id": "k02", "what": "s.208: overdue the day after the last day", "fn": "s208", "record": {"placed_in_another_district": true, "placed_on": "2026-10-01"}, "today": "2026-10-15", "expect": {"applies": true, "due": "2026-10-14", "state": "overdue"}},
+  {"id": "k03", "what": "s.208: sent on the last day is on time", "fn": "s208", "record": {"placed_in_another_district": true, "placed_on": "2026-10-01"}, "today": "2026-11-01", "sent_on": "2026-10-14", "expect": {"applies": true, "due": "2026-10-14", "state": "sent_on_time"}},
+  {"id": "k04", "what": "s.208: sent a day late", "fn": "s208", "record": {"placed_in_another_district": true, "placed_on": "2026-10-01"}, "today": "2026-11-01", "sent_on": "2026-10-15", "expect": {"applies": true, "due": "2026-10-14", "state": "sent_late"}},
+  {"id": "k05", "what": "s.208: not out of district, no notice", "fn": "s208", "record": {"placed_in_another_district": false, "placed_on": "2026-10-01"}, "today": "2026-10-10", "expect": {"applies": false, "due": null, "state": "not_applicable"}},
+  {"id": "k06", "what": "s.213AA: placed before 1 September 2026, the application was before it too", "fn": "child_scope", "record": {"children": 2, "placed_on": "2026-08-31"}, "expect": {"applies": false, "reason": "before_commencement", "children": 2, "young_applicant": false}},
+  {"id": "k07", "what": "s.213AA: placed from 1 September, check the application date", "fn": "child_scope", "record": {"children": 1, "placed_on": "2026-09-01"}, "expect": {"applies": true, "reason": "check_application_date", "children": 1, "young_applicant": false}},
+  {"id": "k07b", "what": "s.213AA: a 16 or 17 year old applicant is a child, and is the one asked (s.213AA(3))", "fn": "child_scope", "record": {"children": 0, "priority_need": "applicant aged 16 or 17", "placed_on": "2026-09-10"}, "expect": {"applies": true, "reason": "check_application_date", "children": 1, "young_applicant": true}},
+  {"id": "k08", "what": "s.213AA: no child, no duty", "fn": "child_scope", "record": {"children": 0, "placed_on": "2026-10-01"}, "expect": {"applies": false, "reason": "no_child", "children": 0, "young_applicant": false}},
+  {"id": "k09", "what": "s.213AA: a body's clock runs from the latest of the agreement, the information about that body and the placement", "fn": "child_due", "placed_on": "2026-09-10", "agreed_on": "2026-09-20", "info_on": "2026-09-25", "expect": {"due": "2026-10-08"}},
+  {"id": "k10", "what": "s.213AA: no agreement, no clock", "fn": "child_due", "placed_on": "2026-09-10", "agreed_on": null, "info_on": "2026-09-25", "expect": {"due": null}},
+  {"id": "k11", "what": "s.213AA: information not yet given, no clock", "fn": "child_due", "placed_on": "2026-09-10", "agreed_on": "2026-09-12", "info_on": null, "expect": {"due": null}},
+  {"id": "k12", "what": "B&B: 6 weeks beginning with the placement end 41 days after it, the day to move by; the next day 6 weeks are reached", "fn": "bnb", "record": {"suitability_checks": ["bnb-family-limit"], "placed_on": "2026-09-16"}, "today": "2026-10-28", "expect": {"applies": true, "limit": "2026-10-27", "state": "past"}},
+  {"id": "k12b", "what": "B&B: the day to move by is still within 6 weeks", "fn": "bnb", "record": {"suitability_checks": ["bnb-family-limit"], "placed_on": "2026-09-16"}, "today": "2026-10-27", "expect": {"applies": true, "limit": "2026-10-27", "state": "soon"}},
+  {"id": "k13", "what": "B&B: past six weeks", "fn": "bnb", "record": {"suitability_checks": ["bnb-family-limit"], "placed_on": "2026-09-16"}, "today": "2026-10-29", "expect": {"applies": true, "limit": "2026-10-27", "state": "past"}},
+  {"id": "k14", "what": "B&B: more than 14 days to go", "fn": "bnb", "record": {"suitability_checks": ["bnb-family-limit"], "placed_on": "2026-10-20"}, "today": "2026-10-21", "expect": {"applies": true, "limit": "2026-11-30", "state": "later"}},
+  {"id": "k15", "what": "B&B: not a family placement", "fn": "bnb", "record": {"suitability_checks": [], "placed_on": "2026-10-20"}, "today": "2026-10-21", "expect": {"applies": false, "limit": null, "state": "not_applicable"}},
+  {"id": "k16", "what": "Review: due 55 days after the request", "fn": "review", "requested_on": "2026-10-01", "today": "2026-10-02", "expect": {"due": "2026-11-25", "state": "later"}},
+  {"id": "k17", "what": "Review: an agreed longer period moves the date", "fn": "review", "requested_on": "2026-10-01", "agreed_to": "2026-12-10", "today": "2026-11-26", "expect": {"due": "2026-12-10", "state": "due"}},
+  {"id": "k18", "what": "Review: overdue", "fn": "review", "requested_on": "2026-08-01", "today": "2026-10-01", "expect": {"due": "2026-09-25", "state": "overdue"}},
+  {"id": "k19", "what": "Review: decided is done, whatever the date", "fn": "review", "requested_on": "2026-08-01", "decided_on": "2026-10-01", "today": "2026-10-02", "expect": {"due": "2026-09-25", "state": "decided_late"}},
+  {"id": "k20", "what": "Due today counts as due, not overdue", "fn": "s208", "record": {"placed_in_another_district": true, "placed_on": "2026-10-01"}, "today": "2026-10-14", "expect": {"applies": true, "due": "2026-10-14", "state": "due"}}
+ ]
+}

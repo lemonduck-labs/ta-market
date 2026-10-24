@@ -1,0 +1,1451 @@
+{
+  "attribution": "Contains public sector information licensed under the Open Government Licence v3.0.",
+  "extracts": [
+    {
+      "extract_file": "ro4_2023_24.txt",
+      "extract_sha256": "fba75378ef65ccfef9928689ef0854ebec6dac26fc81e55ba5ec9be4b4d7a0d4",
+      "source_file": "RO4_2023-24_data_by_LA.ods",
+      "source_bytes": 362366,
+      "source_sha256": "7bd09bd90ef5873c0141c7bb697b989ef4ec620010f8b20ae4c8e040b50652ed",
+      "source_url": "https://assets.publishing.service.gov.uk/media/6a29120f3b15d05a7ce31ff7/RO4_2023-24_data_by_LA.ods",
+      "sheet": "RO4_LA_Data_2023-24",
+      "title": "Worksheet 3: Revenue Outturn (RO) 2023-24: Housing Services (RO4) data",
+      "rows": 299,
+      "checks": "sha256, rows, row width, column sums: all match",
+      "browser_check": "units GBP thousand; te = total expenditure (C3), nce = net current expenditure (C7); rows: housing authorities, the England row, and other authorities with any TA spend (412 coded rows in the sheet)",
+      "headers": {
+        "ons_code": "ONS Code",
+        "la_name": "Local authority",
+        "e_code": "E-code",
+        "class": "Class",
+        "certification": "Certified",
+        "nightly_paid_self_contained_te": "C3R80 - Nightly paid, privately managed accommodation, self-contained - Total Expenditure (C3 = C1 + C2)25",
+        "nightly_paid_self_contained_nce": "C7R80 - Nightly paid, privately managed accommodation, self-contained - Net Current Expenditure (C7 = C3 - C6)29",
+        "private_sector_leased_te": "C3R81 - Private sector accommodation leased by authority or by a registered provider - Total Expenditure (C3 = C1 + C2)32",
+        "private_sector_leased_nce": "C7R81 - Private sector accommodation leased by authority or by a registered provider - Net Current Expenditure (C7 = C3 - C6)36",
+        "hostels_te": "C3R82 - Hostels (including reception centres, emergency units and refuges) - Total Expenditure (C3 = C1 + C2)39",
+        "hostels_nce": "C7R82 - Hostels (including reception centres, emergency units and refuges) - Net Current Expenditure (C7 = C3 - C6)43",
+        "bed_and_breakfast_te": "C3R83 - Bed and breakfast hotels (including shared annexes) - Total Expenditure (C3 = C1 + C2)46",
+        "bed_and_breakfast_nce": "C7R83 - Bed and breakfast hotels (including shared annexes) - Net Current Expenditure (C7 = C3 - C6)50",
+        "la_ha_stock_te": "C3R84 - Local authority or housing association stock - Total Expenditure (C3 = C1 + C2)53",
+        "la_ha_stock_nce": "C7R84 - Local authority or housing association stock - Net Current Expenditure (C7 = C3 - C6)57",
+        "other_te": "C3R85 - Any other type of temporary accommodation (including private landlord and not known) - Total Expenditure (C3 = C1 + C2)60",
+        "other_nce": "C7R85 - Any other type of temporary accommodation (including private landlord and not known) - Net Current Expenditure (C7 = C3 - C6)64",
+        "ta_admin_te": "C3R86 - Temporary accommodation administration - Total Expenditure (C3 = C1 + C2)67",
+        "ta_admin_nce": "C7R86 - Temporary accommodation administration - Net Current Expenditure (C7 = C3 - C6)71",
+        "total_homelessness_te": "C3R89 - TOTAL HOMELESSNESS - Total Expenditure (C3 = C1 + C2)88",
+        "total_homelessness_nce": "C7R89 - TOTAL HOMELESSNESS - Net Current Expenditure (C7 = C3 - C6)92"
+      },
+      "year": "2023-24",
+      "england_check": {
+        "england_row": true,
+        "lines": {
+          "bed_and_breakfast_te": {
+            "england_row": 726174000.0,
+            "housing_authorities": 724918000.0,
+            "other_authorities": 1259000.0
+          },
+          "bed_and_breakfast_nce": {
+            "england_row": 407035000.0,
+            "housing_authorities": 405779000.0,
+            "other_authorities": 1259000.0
+          },
+          "nightly_paid_self_contained_te": {
+            "england_row": 601409000.0,
+            "housing_authorities": 601409000.0,
+            "other_authorities": 0.0
+          },
+          "nightly_paid_self_contained_nce": {
+            "england_row": 298297000.0,
+            "housing_authorities": 298299000.0,
+            "other_authorities": 0.0
+          },
+          "hostels_te": {
+            "england_row": 84509000.0,
+            "housing_authorities": 84511000.0,
+            "other_authorities": 0.0
+          },
+          "hostels_nce": {
+            "england_row": 28750000.0,
+            "housing_authorities": 28752000.0,
+            "other_authorities": 0.0
+          },
+          "private_sector_leased_te": {
+            "england_row": 522447000.0,
+            "housing_authorities": 522450000.0,
+            "other_authorities": 0.0
+          },
+          "private_sector_leased_nce": {
+            "england_row": 175458000.0,
+            "housing_authorities": 175457000.0,
+            "other_authorities": 0.0
+          },
+          "la_ha_stock_te": {
+            "england_row": 83716000.0,
+            "housing_authorities": 83715000.0,
+            "other_authorities": 0.0
+          },
+          "la_ha_stock_nce": {
+            "england_row": -21536000.0,
+            "housing_authorities": -21538000.0,
+            "other_authorities": 0.0
+          },
+          "other_te": {
+            "england_row": 108920000.0,
+            "housing_authorities": 100058000.0,
+            "other_authorities": 8863000.0
+          },
+          "other_nce": {
+            "england_row": 55973000.0,
+            "housing_authorities": 47110000.0,
+            "other_authorities": 8863000.0
+          },
+          "ta_admin_te": {
+            "england_row": 154711000.0,
+            "housing_authorities": 154711000.0,
+            "other_authorities": 0.0
+          },
+          "ta_admin_nce": {
+            "england_row": 119112000.0,
+            "housing_authorities": 119112000.0,
+            "other_authorities": 0.0
+          },
+          "total_homelessness_te": {
+            "england_row": 3080646000.0,
+            "housing_authorities": 3024714000.0,
+            "other_authorities": 10122000.0
+          },
+          "total_homelessness_nce": {
+            "england_row": 1714613000.0,
+            "housing_authorities": 1661771000.0,
+            "other_authorities": 10122000.0
+          }
+        },
+        "housing_authorities": 296,
+        "housing_authorities_missing": [],
+        "other_authorities_with_ta_spend": [
+          {
+            "ons_code": "E10000016",
+            "la_name": "Kent CC",
+            "class": "SC"
+          },
+          {
+            "ons_code": "E10000032",
+            "la_name": "West Sussex CC",
+            "class": "SC"
+          }
+        ]
+      }
+    },
+    {
+      "extract_file": "ro4_2024_25.txt",
+      "extract_sha256": "f82ac559b793ed1750641e11866d694fcfcd0a744750285b4724f895197ca72a",
+      "source_file": "RO4_LA_Data_2024-25_data_by_LA.ods",
+      "source_bytes": 355468,
+      "source_sha256": "4ef4436709a0a0dba7aca12aa04b6c6bc4a0a804b8976e71803edf2a23e91c28",
+      "source_url": "https://assets.publishing.service.gov.uk/media/6a291b65e371d9d2c0052b83/RO4_LA_Data_2024-25_data_by_LA.ods",
+      "sheet": "RO4_LA_Data_202425",
+      "title": "Worksheet 3: Revenue Outturn (RO) 2024-25: Housing Services (RO4) data",
+      "rows": 411,
+      "checks": "sha256, rows, row width, column sums: all match",
+      "browser_check": "units GBP thousand; te = total expenditure (C3), nce = net current expenditure (C7)",
+      "headers": {
+        "ons_code": "ONS Code",
+        "la_name": "Local authority",
+        "e_code": "E-code",
+        "class": "Class",
+        "certification": "Certification",
+        "nightly_paid_self_contained_te": "Nightly paid, privately managed accommodation, self-contained - Total Expenditure (C3 = C1 + C2)",
+        "nightly_paid_self_contained_nce": "Nightly paid, privately managed accommodation, self-contained - Net Current Expenditure (C7 = C3 - C6)",
+        "private_sector_leased_te": "Private sector accommodation leased by authority or by a registered provider - Total Expenditure (C3 = C1 + C2)",
+        "private_sector_leased_nce": "Private sector accommodation leased by authority or by a registered provider - Net Current Expenditure (C7 = C3 - C6)",
+        "hostels_te": "Hostels (including reception centres, emergency units and refuges) - Total Expenditure (C3 = C1 + C2)",
+        "hostels_nce": "Hostels (including reception centres, emergency units and refuges) - Net Current Expenditure (C7 = C3 - C6)",
+        "bed_and_breakfast_te": "Bed and breakfast hotels (including shared annexes) - Total Expenditure (C3 = C1 + C2)",
+        "bed_and_breakfast_nce": "Bed and breakfast hotels (including shared annexes) - Net Current Expenditure (C7 = C3 - C6)",
+        "la_ha_stock_te": "Local authority or housing association stock - Total Expenditure (C3 = C1 + C2)",
+        "la_ha_stock_nce": "Local authority or housing association stock - Net Current Expenditure (C7 = C3 - C6)",
+        "other_te": "Any other type of temporary accommodation (including private landlord and not known) - Total Expenditure (C3 = C1 + C2)",
+        "other_nce": "Any other type of temporary accommodation (including private landlord and not known) - Net Current Expenditure (C7 = C3 - C6)",
+        "ta_admin_te": "Temporary accommodation administration - Total Expenditure (C3 = C1 + C2)",
+        "ta_admin_nce": "Temporary accommodation administration - Net Current Expenditure (C7 = C3 - C6)",
+        "total_homelessness_te": "TOTAL HOMELESSNESS - Total Expenditure (C3 = C1 + C2)",
+        "total_homelessness_nce": "TOTAL HOMELESSNESS - Net Current Expenditure (C7 = C3 - C6)"
+      },
+      "year": "2024-25",
+      "england_check": {
+        "england_row": true,
+        "lines": {
+          "bed_and_breakfast_te": {
+            "england_row": 711665377.03,
+            "housing_authorities": 710748000.0,
+            "other_authorities": 843000.0
+          },
+          "bed_and_breakfast_nce": {
+            "england_row": 370865417.03000003,
+            "housing_authorities": 369948040.0,
+            "other_authorities": 843000.0
+          },
+          "nightly_paid_self_contained_te": {
+            "england_row": 1070834360.0000001,
+            "housing_authorities": 1070834360.0,
+            "other_authorities": 0.0
+          },
+          "nightly_paid_self_contained_nce": {
+            "england_row": 601875430.0,
+            "housing_authorities": 601875430.0,
+            "other_authorities": 0.0
+          },
+          "hostels_te": {
+            "england_row": 101833025.42999999,
+            "housing_authorities": 100498110.0,
+            "other_authorities": 0.0
+          },
+          "hostels_nce": {
+            "england_row": 36509300.300000004,
+            "housing_authorities": 35657700.0,
+            "other_authorities": 0.0
+          },
+          "private_sector_leased_te": {
+            "england_row": 562751690.0,
+            "housing_authorities": 562751690.0,
+            "other_authorities": 0.0
+          },
+          "private_sector_leased_nce": {
+            "england_row": 213000020.0,
+            "housing_authorities": 213000020.0,
+            "other_authorities": 0.0
+          },
+          "la_ha_stock_te": {
+            "england_row": 124118545.55,
+            "housing_authorities": 123948120.0,
+            "other_authorities": 0.0
+          },
+          "la_ha_stock_nce": {
+            "england_row": -1904368.38,
+            "housing_authorities": -1880960.0,
+            "other_authorities": 0.0
+          },
+          "other_te": {
+            "england_row": 81303640.46,
+            "housing_authorities": 77059480.0,
+            "other_authorities": 4237000.0
+          },
+          "other_nce": {
+            "england_row": 43404520.46,
+            "housing_authorities": 39160360.0,
+            "other_authorities": 4237000.0
+          },
+          "ta_admin_te": {
+            "england_row": 171351150.0,
+            "housing_authorities": 171351150.0,
+            "other_authorities": 0.0
+          },
+          "ta_admin_nce": {
+            "england_row": 129950090.0,
+            "housing_authorities": 129950090.0,
+            "other_authorities": 0.0
+          },
+          "total_homelessness_te": {
+            "england_row": 3721973258.39,
+            "housing_authorities": 3674216220.0,
+            "other_authorities": 44491800.0
+          },
+          "total_homelessness_nce": {
+            "england_row": 2146961395.0700002,
+            "housing_authorities": 2100776320.0,
+            "other_authorities": 43918900.0
+          }
+        },
+        "housing_authorities": 296,
+        "housing_authorities_missing": [
+          {
+            "ons_code": "E06000063",
+            "la_name": "Cumberland"
+          }
+        ],
+        "other_authorities_with_ta_spend": [
+          {
+            "ons_code": "E10000016",
+            "la_name": "Kent CC",
+            "class": "SC"
+          },
+          {
+            "ons_code": "E10000032",
+            "la_name": "West Sussex CC",
+            "class": "SC"
+          }
+        ]
+      }
+    },
+    {
+      "extract_file": "ro4_2025_26.txt",
+      "extract_sha256": "4cf4bb4de0dc8a899bb1241b64215b1d8619140908ed3b8907a97ec7e7797a1d",
+      "source_file": "RO4_LA_Data_2025-26_data_by_LA.ods",
+      "source_bytes": 376230,
+      "source_sha256": "3c4a8a04625f42a77e13486c38775655a693496fd0008f70811dea8946c798c4",
+      "source_url": "https://assets.publishing.service.gov.uk/media/6ab26f188cb3c0580e500fa7/RO4_LA_Data_2025-26_data_by_LA.ods",
+      "sheet": "RO4_LA_Data_202526",
+      "title": "Worksheet 2: Revenue Outturn (RO) 2025-26: Housing Services (RO4) data",
+      "rows": 299,
+      "checks": "sha256, rows, row width, column sums: all match",
+      "browser_check": "units GBP thousand; te = total expenditure (C3), nce = net current expenditure (C7); rows: housing authorities, the England row, and other authorities with any TA spend (414 coded rows in the sheet)",
+      "headers": {
+        "ons_code": "ONS Code",
+        "la_name": "Local authority",
+        "e_code": "E-code",
+        "class": "Class",
+        "certification": "Certification",
+        "nightly_paid_self_contained_te": "Nightly paid, privately managed accommodation, self-contained - Total Expenditure (C3 = C1 + C2)",
+        "nightly_paid_self_contained_nce": "Nightly paid, privately managed accommodation, self-contained - Net Current Expenditure (C7 = C3 - C6)",
+        "private_sector_leased_te": "Private sector accommodation leased by authority or by a registered provider - Total Expenditure (C3 = C1 + C2)",
+        "private_sector_leased_nce": "Private sector accommodation leased by authority or by a registered provider - Net Current Expenditure (C7 = C3 - C6)",
+        "hostels_te": "Hostels (including reception centres, emergency units and refuges) - Total Expenditure (C3 = C1 + C2)",
+        "hostels_nce": "Hostels (including reception centres, emergency units and refuges) - Net Current Expenditure (C7 = C3 - C6)",
+        "bed_and_breakfast_te": "Bed and breakfast hotels (including shared annexes) - Total Expenditure (C3 = C1 + C2)",
+        "bed_and_breakfast_nce": "Bed and breakfast hotels (including shared annexes) - Net Current Expenditure (C7 = C3 - C6)",
+        "la_ha_stock_te": "Local authority or housing association stock - Total Expenditure (C3 = C1 + C2)",
+        "la_ha_stock_nce": "Local authority or housing association stock - Net Current Expenditure (C7 = C3 - C6)",
+        "other_te": "Any other type of temporary accommodation (including private landlord and not known) - Total Expenditure (C3 = C1 + C2)",
+        "other_nce": "Any other type of temporary accommodation (including private landlord and not known) - Net Current Expenditure (C7 = C3 - C6)",
+        "ta_admin_te": "Temporary accommodation administration - Total Expenditure (C3 = C1 + C2)",
+        "ta_admin_nce": "Temporary accommodation administration - Net Current Expenditure (C7 = C3 - C6)",
+        "total_homelessness_te": "TOTAL HOMELESSNESS - Total Expenditure (C3 = C1 + C2)",
+        "total_homelessness_nce": "TOTAL HOMELESSNESS - Net Current Expenditure (C7 = C3 - C6)"
+      },
+      "year": "2025-26",
+      "england_check": {
+        "england_row": true,
+        "lines": {
+          "bed_and_breakfast_te": {
+            "england_row": 822641057.27,
+            "housing_authorities": 811329370.0,
+            "other_authorities": 875000.0
+          },
+          "bed_and_breakfast_nce": {
+            "england_row": 467484893.74,
+            "housing_authorities": 463534730.0,
+            "other_authorities": 772000.0
+          },
+          "nightly_paid_self_contained_te": {
+            "england_row": 955143679.5,
+            "housing_authorities": 941953620.0,
+            "other_authorities": 0.0
+          },
+          "nightly_paid_self_contained_nce": {
+            "england_row": 494263661.71000004,
+            "housing_authorities": 487338270.0,
+            "other_authorities": 0.0
+          },
+          "hostels_te": {
+            "england_row": 109462447.19999999,
+            "housing_authorities": 103106130.0,
+            "other_authorities": 2873810.0
+          },
+          "hostels_nce": {
+            "england_row": 26193960.040000003,
+            "housing_authorities": 23263700.0,
+            "other_authorities": 2623030.0
+          },
+          "private_sector_leased_te": {
+            "england_row": 609155419.71,
+            "housing_authorities": 603172070.0,
+            "other_authorities": 0.0
+          },
+          "private_sector_leased_nce": {
+            "england_row": 271191655.06,
+            "housing_authorities": 268143540.0,
+            "other_authorities": 0.0
+          },
+          "la_ha_stock_te": {
+            "england_row": 129724013.7,
+            "housing_authorities": 128283110.0,
+            "other_authorities": 0.0
+          },
+          "la_ha_stock_nce": {
+            "england_row": -4837394.51,
+            "housing_authorities": -5288580.0,
+            "other_authorities": 0.0
+          },
+          "other_te": {
+            "england_row": 102538851.88,
+            "housing_authorities": 96712940.0,
+            "other_authorities": 4371000.0
+          },
+          "other_nce": {
+            "england_row": 57868336.83,
+            "housing_authorities": 53453120.0,
+            "other_authorities": 3856000.0
+          },
+          "ta_admin_te": {
+            "england_row": 205963702.01000002,
+            "housing_authorities": 199026230.0,
+            "other_authorities": 0.0
+          },
+          "ta_admin_nce": {
+            "england_row": 157916276.24,
+            "housing_authorities": 151928410.0,
+            "other_authorities": 0.0
+          },
+          "total_homelessness_te": {
+            "england_row": 4047221928.44,
+            "housing_authorities": 3930586270.0,
+            "other_authorities": 8119810.0
+          },
+          "total_homelessness_nce": {
+            "england_row": 2344199666.08,
+            "housing_authorities": 2258319420.0,
+            "other_authorities": 7251030.0
+          }
+        },
+        "housing_authorities": 296,
+        "housing_authorities_missing": [
+          {
+            "ons_code": "E07000192",
+            "la_name": "Cannock Chase"
+          },
+          {
+            "ons_code": "E07000069",
+            "la_name": "Castle Point"
+          },
+          {
+            "ons_code": "E07000079",
+            "la_name": "Cotswold"
+          },
+          {
+            "ons_code": "E06000063",
+            "la_name": "Cumberland"
+          },
+          {
+            "ons_code": "E08000027",
+            "la_name": "Dudley"
+          },
+          {
+            "ons_code": "E07000040",
+            "la_name": "East Devon"
+          },
+          {
+            "ons_code": "E07000010",
+            "la_name": "Fenland"
+          },
+          {
+            "ons_code": "E07000112",
+            "la_name": "Folkestone & Hythe"
+          },
+          {
+            "ons_code": "E07000037",
+            "la_name": "High Peak"
+          },
+          {
+            "ons_code": "E07000011",
+            "la_name": "Huntingdonshire"
+          },
+          {
+            "ons_code": "E06000053",
+            "la_name": "Isles of Scilly"
+          },
+          {
+            "ons_code": "E07000147",
+            "la_name": "North Norfolk"
+          },
+          {
+            "ons_code": "E07000218",
+            "la_name": "North Warwickshire"
+          },
+          {
+            "ons_code": "E07000134",
+            "la_name": "North West Leicestershire"
+          },
+          {
+            "ons_code": "E07000124",
+            "la_name": "Ribble Valley"
+          },
+          {
+            "ons_code": "E07000220",
+            "la_name": "Rugby"
+          },
+          {
+            "ons_code": "E07000212",
+            "la_name": "Runnymede"
+          },
+          {
+            "ons_code": "E08000028",
+            "la_name": "Sandwell"
+          },
+          {
+            "ons_code": "E07000240",
+            "la_name": "St Albans"
+          },
+          {
+            "ons_code": "E07000197",
+            "la_name": "Stafford BC"
+          },
+          {
+            "ons_code": "E07000198",
+            "la_name": "Staffordshire Moorlands"
+          },
+          {
+            "ons_code": "E07000083",
+            "la_name": "Tewkesbury"
+          },
+          {
+            "ons_code": "E07000222",
+            "la_name": "Warwick"
+          },
+          {
+            "ons_code": "E07000216",
+            "la_name": "Waverley"
+          },
+          {
+            "ons_code": "E07000217",
+            "la_name": "Woking BC"
+          }
+        ],
+        "other_authorities_with_ta_spend": [
+          {
+            "ons_code": "E10000030",
+            "la_name": "Surrey CC",
+            "class": "SC"
+          },
+          {
+            "ons_code": "E10000032",
+            "la_name": "West Sussex CC",
+            "class": "SC"
+          }
+        ]
+      }
+    },
+    {
+      "extract_file": "la_202403.txt",
+      "extract_sha256": "d91c47b3c74b0ec4b5a4a948ac22611fa17130df12c86595ef33cc74e9d2baa2",
+      "source_file": "Detailed_LA_202403.xlsx",
+      "source_bytes": 2319037,
+      "source_sha256": "7546bfdf48ee7af95f41e8bce1fd131846bb834e28581b25f38a4ca0f9dc9c9d",
+      "source_url": "https://assets.publishing.service.gov.uk/media/6747279da72d7eb7f348c04c/Detailed_LA_202403.xlsx",
+      "sheet": "TA1",
+      "title": "Table TA1 - Number of households by type of temporary accommodation provided England, 31 March 2024",
+      "rows": 307,
+      "checks": "sha256, rows, row width, column sums: all match",
+      "browser_check": "layout 2024-25; six types sum to total in 289 of 294 fully numeric rows",
+      "headers": {
+        "code": "",
+        "name": "",
+        "total": "Households in temporary accommodation at end of quarter1 / Total number of households in TA1,2,3,4",
+        "area_households_thousands": "Number of households in area5 (000s)",
+        "with_children": "Households in temporary accommodation at end of quarter1 children / Total number of households in TA with children",
+        "children": "Total number of children in TA",
+        "bed_and_breakfast": "Bed and breakfast hotels (including shared annexes) / Bed and breakfast hotels (including shared annexes) / Total number of households",
+        "nightly_paid_self_contained": "Nightly paid, privately managed accommodation, self-contained / Nightly paid, privately managed accommodation, self-contained / Total number of households",
+        "hostels": "Hostels (including reception centres, emergency units and refuges) / Hostels (including reception centres, emergency units and refuges) / Total number of households",
+        "private_sector_leased": "Private sector accommodation leased by authority or by a registered provider / Private sector accommodation leased by your authority or leased or managed by a registered provider / Total number of households",
+        "la_ha_stock": "Local authority or Housing association (LA/HA) stock / Local authority or Housing association (LA/HA) stock / Total number of households",
+        "other": "Any other type of temporary accommodation (including private landlord and not known)2 / Any other type of temporary accommodation (including private landlord and not known)6 / Total number of households",
+        "in_ta_in_another_la": "In TA in another local authority district / In TA in another local authority district",
+        "no_accommodation_secured": "Duty owed, no accommodation secured3 / Duty owed, no accommodation secured7 / Total number of households"
+      },
+      "quarter": "2024-Q1",
+      "snapshot_date": "2024-03-31",
+      "type_check": {
+        "councils": 296,
+        "councils_with_total": 283,
+        "councils_fully_numeric": 283,
+        "types_sum_to_total": 283,
+        "largest_gap": 0.0,
+        "mismatches": []
+      },
+      "councils_without_data": [
+        {
+          "code": "E06000055",
+          "name": "Bedford",
+          "total_marker": ".."
+        },
+        {
+          "code": "E07000136",
+          "name": "Boston",
+          "total_marker": ".."
+        },
+        {
+          "code": "E07000067",
+          "name": "Braintree",
+          "total_marker": ".."
+        },
+        {
+          "code": "E09000005",
+          "name": "Brent",
+          "total_marker": ".."
+        },
+        {
+          "code": "E09000007",
+          "name": "Camden",
+          "total_marker": ".."
+        },
+        {
+          "code": "E06000052",
+          "name": "Cornwall",
+          "total_marker": ".."
+        },
+        {
+          "code": "E09000008",
+          "name": "Croydon",
+          "total_marker": ".."
+        },
+        {
+          "code": "E08000017",
+          "name": "Doncaster",
+          "total_marker": ".."
+        },
+        {
+          "code": "E09000020",
+          "name": "Kensington & Chelsea",
+          "total_marker": ".."
+        },
+        {
+          "code": "E09000022",
+          "name": "Lambeth",
+          "total_marker": ".."
+        },
+        {
+          "code": "E08000021",
+          "name": "Newcastle on Tyne",
+          "total_marker": ".."
+        },
+        {
+          "code": "E08000018",
+          "name": "Rotherham",
+          "total_marker": ".."
+        },
+        {
+          "code": "E08000031",
+          "name": "Wolverhampton",
+          "total_marker": ".."
+        }
+      ],
+      "england_published_total": 117350.0,
+      "councils_sum_total": 105771.0
+    },
+    {
+      "extract_file": "la_202406.txt",
+      "extract_sha256": "b82fd04d57f67ed01eead95d8afee2d6f1b6343d141b13736c942bc74aa7228c",
+      "source_file": "Statutory_Homelessness_Detailed_Local_Authority_Data_202406_revised.ods",
+      "source_bytes": 1252627,
+      "source_sha256": "225ba959434261f393d7c4b67052aa6c8e75683ee37d9fa7e129829d43828b25",
+      "source_url": "https://assets.publishing.service.gov.uk/media/699d950a532c9ad91ebbcbd2/Statutory_Homelessness_Detailed_Local_Authority_Data_202406_revised.ods",
+      "sheet": "TA1",
+      "title": "Table TA1 - Number of households by type of temporary accommodation provided England, 30 June 2024",
+      "rows": 307,
+      "checks": "sha256, rows, row width, column sums: all match",
+      "browser_check": "layout 2024-25; six types sum to total in 284 of 287 fully numeric rows",
+      "headers": {
+        "code": "",
+        "name": "",
+        "total": "Households in temporary accommodation at end of quarter1 / Total number of households in TA1,2,3,4",
+        "area_households_thousands": "Number of households in area5(000s)",
+        "with_children": "Households in temporary accommodation at end of quarter1children / Total number of households in TA with children",
+        "children": "Total number of children in TA",
+        "bed_and_breakfast": "Bed and breakfast hotels (including shared annexes) / Bed and breakfast hotels (including shared annexes) / Total number of households",
+        "nightly_paid_self_contained": "Nightly paid, privately managed accommodation, self-contained / Nightly paid, privately managed accommodation, self-contained / Total number of households",
+        "hostels": "Hostels (including reception centres, emergency units and refuges) / Hostels (including reception centres, emergency units and refuges) / Total number of households",
+        "private_sector_leased": "Private sector accommodation leased by authority or by a registered provider / Private sector accommodation leased by your authority or leased or managed by a registered provider / Total number of households",
+        "la_ha_stock": "Local authority or Housing association (LA/HA) stock / Local authority or Housing association (LA/HA) stock / Total number of households",
+        "other": "Any other type of temporary accommodation (including private landlord and not known)2 / Any other type of temporary accommodation (including private landlord and not known)7 / Total number of households",
+        "in_ta_in_another_la": "In TA in another local authority district / In TA in another local authority district8",
+        "no_accommodation_secured": "Duty owed, no accommodation secured3 / Duty owed, no accommodation secured9 / Total number of households"
+      },
+      "quarter": "2024-Q2",
+      "snapshot_date": "2024-06-30",
+      "type_check": {
+        "councils": 296,
+        "councils_with_total": 276,
+        "councils_fully_numeric": 276,
+        "types_sum_to_total": 276,
+        "largest_gap": 0.0,
+        "mismatches": []
+      },
+      "councils_without_data": [
+        {
+          "code": "E09000002",
+          "name": "Barking & Dagenham",
+          "total_marker": ".."
+        },
+        {
+          "code": "E06000055",
+          "name": "Bedford",
+          "total_marker": ".."
+        },
+        {
+          "code": "E09000005",
+          "name": "Brent",
+          "total_marker": ".."
+        },
+        {
+          "code": "E09000007",
+          "name": "Camden",
+          "total_marker": ".."
+        },
+        {
+          "code": "E07000106",
+          "name": "Canterbury",
+          "total_marker": ".."
+        },
+        {
+          "code": "E06000052",
+          "name": "Cornwall",
+          "total_marker": ".."
+        },
+        {
+          "code": "E07000072",
+          "name": "Epping Forest",
+          "total_marker": ".."
+        },
+        {
+          "code": "E07000036",
+          "name": "Erewash",
+          "total_marker": ".."
+        },
+        {
+          "code": "E09000015",
+          "name": "Harrow",
+          "total_marker": ".."
+        },
+        {
+          "code": "E09000018",
+          "name": "Hounslow",
+          "total_marker": ".."
+        },
+        {
+          "code": "E09000020",
+          "name": "Kensington & Chelsea",
+          "total_marker": ".."
+        },
+        {
+          "code": "E09000022",
+          "name": "Lambeth",
+          "total_marker": ".."
+        },
+        {
+          "code": "E07000074",
+          "name": "Maldon",
+          "total_marker": ".."
+        },
+        {
+          "code": "E07000218",
+          "name": "North Warwickshire",
+          "total_marker": ".."
+        },
+        {
+          "code": "E08000018",
+          "name": "Rotherham",
+          "total_marker": ".."
+        },
+        {
+          "code": "E07000114",
+          "name": "Thanet",
+          "total_marker": ".."
+        },
+        {
+          "code": "E07000102",
+          "name": "Three Rivers",
+          "total_marker": ".."
+        },
+        {
+          "code": "E06000027",
+          "name": "Torbay",
+          "total_marker": ".."
+        },
+        {
+          "code": "E07000217",
+          "name": "Woking",
+          "total_marker": ".."
+        },
+        {
+          "code": "E08000031",
+          "name": "Wolverhampton",
+          "total_marker": ".."
+        }
+      ],
+      "england_published_total": 123030.0,
+      "councils_sum_total": 108942.0
+    },
+    {
+      "extract_file": "la_202409.txt",
+      "extract_sha256": "f195a228a8b4da25d99b6f30467d1b0ee28ebe2ccae5d843b96978b73a4ebf41",
+      "source_file": "Statutory_Homelessness_Detailed_Local_Authority_Data_202409_revised.ods",
+      "source_bytes": 1251371,
+      "source_sha256": "771b38b437006d7ba38af2f0db9085eeacdc8aebac102137303ff05bba16e93a",
+      "source_url": "https://assets.publishing.service.gov.uk/media/699d953607d7bff3604d6c0a/Statutory_Homelessness_Detailed_Local_Authority_Data_202409_revised.ods",
+      "sheet": "TA1",
+      "title": "Table TA1 - Number of households by type of temporary accommodation provided England, 30 September 2024",
+      "rows": 307,
+      "checks": "sha256, rows, row width, column sums: all match",
+      "browser_check": "layout 2024-25; six types sum to total in 286 of 293 fully numeric rows",
+      "headers": {
+        "code": "",
+        "name": "",
+        "total": "Households in temporary accommodation at end of quarter1 / Total number of households in TA1,2,3,4",
+        "area_households_thousands": "Number of households in area5(000s)",
+        "with_children": "Households in temporary accommodation at end of quarter1children / Total number of households in TA with children",
+        "children": "Total number of children in TA",
+        "bed_and_breakfast": "Bed and breakfast hotels (including shared annexes) / Bed and breakfast hotels (including shared annexes) / Total number of households",
+        "nightly_paid_self_contained": "Nightly paid, privately managed accommodation, self-contained / Nightly paid, privately managed accommodation, self-contained / Total number of households",
+        "hostels": "Hostels (including reception centres, emergency units and refuges) / Hostels (including reception centres, emergency units and refuges) / Total number of households",
+        "private_sector_leased": "Private sector accommodation leased by authority or by a registered provider / Private sector accommodation leased by your authority or leased or managed by a registered provider / Total number of households",
+        "la_ha_stock": "Local authority or Housing association (LA/HA) stock / Local authority or Housing association (LA/HA) stock / Total number of households",
+        "other": "Any other type of temporary accommodation (including private landlord and not known)2 / Any other type of temporary accommodation (including private landlord and not known)7 / Total number of households",
+        "in_ta_in_another_la": "In TA in another local authority district / In TA in another local authority district8",
+        "no_accommodation_secured": "Duty owed, no accommodation secured3 / Duty owed, no accommodation secured9 / Total number of households"
+      },
+      "quarter": "2024-Q3",
+      "snapshot_date": "2024-09-30",
+      "type_check": {
+        "councils": 296,
+        "councils_with_total": 282,
+        "councils_fully_numeric": 282,
+        "types_sum_to_total": 282,
+        "largest_gap": 0.0,
+        "mismatches": []
+      },
+      "councils_without_data": [
+        {
+          "code": "E09000005",
+          "name": "Brent",
+          "total_marker": ".."
+        },
+        {
+          "code": "E09000007",
+          "name": "Camden",
+          "total_marker": ".."
+        },
+        {
+          "code": "E08000017",
+          "name": "Doncaster",
+          "total_marker": ".."
+        },
+        {
+          "code": "E07000193",
+          "name": "East Staffordshire",
+          "total_marker": ".."
+        },
+        {
+          "code": "E09000015",
+          "name": "Harrow",
+          "total_marker": ".."
+        },
+        {
+          "code": "E09000022",
+          "name": "Lambeth",
+          "total_marker": ".."
+        },
+        {
+          "code": "E07000139",
+          "name": "North Kesteven",
+          "total_marker": ".."
+        },
+        {
+          "code": "E07000218",
+          "name": "North Warwickshire",
+          "total_marker": ".."
+        },
+        {
+          "code": "E09000026",
+          "name": "Redbridge",
+          "total_marker": ".."
+        },
+        {
+          "code": "E08000018",
+          "name": "Rotherham",
+          "total_marker": ".."
+        },
+        {
+          "code": "E09000028",
+          "name": "Southwark",
+          "total_marker": ".."
+        },
+        {
+          "code": "E09000033",
+          "name": "Westminster",
+          "total_marker": ".."
+        },
+        {
+          "code": "E07000217",
+          "name": "Woking",
+          "total_marker": ".."
+        },
+        {
+          "code": "E08000031",
+          "name": "Wolverhampton",
+          "total_marker": ".."
+        }
+      ],
+      "england_published_total": 125970.0,
+      "councils_sum_total": 107608.0
+    },
+    {
+      "extract_file": "la_202412.txt",
+      "extract_sha256": "23d3a1c8f9adaebfa36363c04be3d8cc979ce83214c57594d1abb169f457d80f",
+      "source_file": "Statutory_Homelessness_Detailed_Local_Authority_Data_202412_revised.ods",
+      "source_bytes": 1253454,
+      "source_sha256": "3178e5f6550c4aa032a39d05c78d504c1282c39e7feca2f93e79b26fd4005f77",
+      "source_url": "https://assets.publishing.service.gov.uk/media/699d956edb2401de164d6c1c/Statutory_Homelessness_Detailed_Local_Authority_Data_202412_revised.ods",
+      "sheet": "TA1",
+      "title": "Table TA1 - Number of households by type of temporary accommodation provided England, 31st December 2024",
+      "rows": 307,
+      "checks": "sha256, rows, row width, column sums: all match",
+      "browser_check": "layout 2024-25; six types sum to total in 293 of 297 fully numeric rows",
+      "headers": {
+        "code": "",
+        "name": "",
+        "total": "Households in temporary accommodation at end of quarter1 / Total number of households in TA1,2,3,4",
+        "area_households_thousands": "Number of households in area5(000s)",
+        "with_children": "Households in temporary accommodation at end of quarter1children / Total number of households in TA with children",
+        "children": "Total number of children in TA",
+        "bed_and_breakfast": "Bed and breakfast hotels (including shared annexes) / Bed and breakfast hotels (including shared annexes) / Total number of households",
+        "nightly_paid_self_contained": "Nightly paid, privately managed accommodation, self-contained / Nightly paid, privately managed accommodation, self-contained / Total number of households",
+        "hostels": "Hostels (including reception centres, emergency units and refuges) / Hostels (including reception centres, emergency units and refuges) / Total number of households",
+        "private_sector_leased": "Private sector accommodation leased by authority or by a registered provider / Private sector accommodation leased by your authority or leased or managed by a registered provider / Total number of households",
+        "la_ha_stock": "Local authority or Housing association (LA/HA) stock / Local authority or Housing association (LA/HA) stock / Total number of households",
+        "other": "Any other type of temporary accommodation (including private landlord and not known)2 / Any other type of temporary accommodation (including private landlord and not known)7 / Total number of households",
+        "in_ta_in_another_la": "In TA in another local authority district / In TA in another local authority district8",
+        "no_accommodation_secured": "Duty owed, no accommodation secured3 / Duty owed, no accommodation secured9 / Total number of households"
+      },
+      "quarter": "2024-Q4",
+      "snapshot_date": "2024-12-31",
+      "type_check": {
+        "councils": 296,
+        "councils_with_total": 286,
+        "councils_fully_numeric": 286,
+        "types_sum_to_total": 286,
+        "largest_gap": 0.0,
+        "mismatches": []
+      },
+      "councils_without_data": [
+        {
+          "code": "E07000171",
+          "name": "Bassetlaw",
+          "total_marker": ".."
+        },
+        {
+          "code": "E09000005",
+          "name": "Brent",
+          "total_marker": ".."
+        },
+        {
+          "code": "E08000002",
+          "name": "Bury",
+          "total_marker": ".."
+        },
+        {
+          "code": "E09000007",
+          "name": "Camden",
+          "total_marker": ".."
+        },
+        {
+          "code": "E09000021",
+          "name": "Kingston upon Thames",
+          "total_marker": ".."
+        },
+        {
+          "code": "E09000022",
+          "name": "Lambeth",
+          "total_marker": ".."
+        },
+        {
+          "code": "E09000023",
+          "name": "Lewisham",
+          "total_marker": ".."
+        },
+        {
+          "code": "E06000042",
+          "name": "Milton Keynes",
+          "total_marker": ".."
+        },
+        {
+          "code": "E07000218",
+          "name": "North Warwickshire",
+          "total_marker": ".."
+        },
+        {
+          "code": "E06000040",
+          "name": "Windsor & Maidenhead",
+          "total_marker": ".."
+        }
+      ],
+      "england_published_total": 127820.0,
+      "councils_sum_total": 115966.0
+    },
+    {
+      "extract_file": "la_202503.txt",
+      "extract_sha256": "1ce2e1fb0c3bf6dd7fd4cd4906c64baaf560a42d961e26c6a05e789a682e5b77",
+      "source_file": "Statutory_Homelessness_Detailed_Local_Authority_Data_202503_revised.ods",
+      "source_bytes": 1727504,
+      "source_sha256": "42172c1dd5b8fe2f63cfaa3200c27f1d04eb8a5228a829ee19f9237c1ff34e27",
+      "source_url": "https://assets.publishing.service.gov.uk/media/699d95ae07d7bff3604d6c0c/Statutory_Homelessness_Detailed_Local_Authority_Data_202503_revised.ods",
+      "sheet": "TA1",
+      "title": "Table TA1 - Number of households by type of temporary accommodation provided England, 31 March 2025",
+      "rows": 307,
+      "checks": "sha256, rows, row width, column sums: all match",
+      "browser_check": "layout 2024-25; six types sum to total in 291 of 296 fully numeric rows",
+      "headers": {
+        "code": "",
+        "name": "",
+        "total": "Households in temporary accommodation at end of quarter1 / Total number of households in TA1,2,3,4",
+        "area_households_thousands": "Number of households in area5(000s)",
+        "with_children": "Households in temporary accommodation at end of quarter1children / Total number of households in TA with children",
+        "children": "Total number of children in TA",
+        "bed_and_breakfast": "Bed and breakfast hotels (including shared annexes) / Bed and breakfast hotels (including shared annexes) / Total number of households",
+        "nightly_paid_self_contained": "Nightly paid, privately managed accommodation, self-contained / Nightly paid, privately managed accommodation, self-contained / Total number of households",
+        "hostels": "Hostels (including reception centres, emergency units and refuges) / Hostels (including reception centres, emergency units and refuges) / Total number of households",
+        "private_sector_leased": "Private sector accommodation leased by authority or by a registered provider / Private sector accommodation leased by your authority or leased or managed by a registered provider / Total number of households",
+        "la_ha_stock": "Local authority or Housing association (LA/HA) stock / Local authority or Housing association (LA/HA) stock / Total number of households",
+        "other": "Any other type of temporary accommodation (including private landlord and not known)2 / Any other type of temporary accommodation (including private landlord and not known)7 / Total number of households",
+        "in_ta_in_another_la": "In TA in another local authority district / In TA in another local authority district8",
+        "no_accommodation_secured": "Duty owed, no accommodation secured3 / Duty owed, no accommodation secured9 / Total number of households"
+      },
+      "quarter": "2025-Q1",
+      "snapshot_date": "2025-03-31",
+      "type_check": {
+        "councils": 296,
+        "councils_with_total": 285,
+        "councils_fully_numeric": 285,
+        "types_sum_to_total": 285,
+        "largest_gap": 0.0,
+        "mismatches": []
+      },
+      "councils_without_data": [
+        {
+          "code": "E09000005",
+          "name": "Brent",
+          "total_marker": ".."
+        },
+        {
+          "code": "E09000007",
+          "name": "Camden",
+          "total_marker": ".."
+        },
+        {
+          "code": "E09000013",
+          "name": "Hammersmith & Fulham",
+          "total_marker": ".."
+        },
+        {
+          "code": "E09000015",
+          "name": "Harrow",
+          "total_marker": ".."
+        },
+        {
+          "code": "E09000017",
+          "name": "Hillingdon",
+          "total_marker": ".."
+        },
+        {
+          "code": "E09000021",
+          "name": "Kingston upon Thames",
+          "total_marker": ".."
+        },
+        {
+          "code": "E09000022",
+          "name": "Lambeth",
+          "total_marker": ".."
+        },
+        {
+          "code": "E09000023",
+          "name": "Lewisham",
+          "total_marker": ".."
+        },
+        {
+          "code": "E06000027",
+          "name": "Torbay",
+          "total_marker": ".."
+        },
+        {
+          "code": "E07000217",
+          "name": "Woking",
+          "total_marker": ".."
+        },
+        {
+          "code": "E08000031",
+          "name": "Wolverhampton",
+          "total_marker": ".."
+        }
+      ],
+      "england_published_total": 130890.0,
+      "councils_sum_total": 115431.0
+    },
+    {
+      "extract_file": "la_202506.txt",
+      "extract_sha256": "426d5655ccb2e30494de3042d52b29ff92e9510360c0eb9dec7daaae8cb45cb8",
+      "source_file": "Detailed_LA_202506_revised_corrected.xlsx",
+      "source_bytes": 2563761,
+      "source_sha256": "7abbeede9ce7d0c74ecbeb220f8265228f7a4ecd7fcd0dbecafd911d9813d2be",
+      "source_url": "https://assets.publishing.service.gov.uk/media/6a2c1fe0e50716856ed4b008/Detailed_LA_202506_revised_corrected.xlsx",
+      "sheet": "TA1",
+      "title": "Table TA1 - Number of households by type of temporary accommodation provided England, 30 June 2025",
+      "rows": 307,
+      "checks": "sha256, rows, row width, column sums: all match",
+      "browser_check": "layout 2024-25; six types sum to total in 292 of 297 fully numeric rows",
+      "headers": {
+        "code": "",
+        "name": "",
+        "total": "Households in temporary accommodation at end of quarter1 / Total number of households in TA1,2,3,4",
+        "area_households_thousands": "Number of households in area5 (000s)",
+        "with_children": "Households in temporary accommodation at end of quarter1 children / Total number of households in TA with children",
+        "children": "Total number of children in TA",
+        "bed_and_breakfast": "Bed and breakfast hotels (including shared annexes) / Bed and breakfast hotels (including shared annexes) / Total number of households",
+        "nightly_paid_self_contained": "Nightly paid, privately managed accommodation, self-contained / Nightly paid, privately managed accommodation, self-contained / Total number of households",
+        "hostels": "Hostels (including reception centres, emergency units and refuges) / Hostels (including reception centres, emergency units and refuges) / Total number of households",
+        "private_sector_leased": "Private sector accommodation leased by authority or by a registered provider / Private sector accommodation leased by your authority or leased or managed by a registered provider / Total number of households",
+        "la_ha_stock": "Local authority or Housing association (LA/HA) stock / Local authority or Housing association (LA/HA) stock / Total number of households",
+        "other": "Any other type of temporary accommodation (including private landlord and not known)2 / Any other type of temporary accommodation (including private landlord and not known)7 / Total number of households",
+        "in_ta_in_another_la": "In TA in another local authority district / In TA in another local authority district 8",
+        "no_accommodation_secured": "Duty owed, no accommodation secured3 / Duty owed, no accommodation secured9 / Total number of households"
+      },
+      "quarter": "2025-Q2",
+      "snapshot_date": "2025-06-30",
+      "type_check": {
+        "councils": 296,
+        "councils_with_total": 286,
+        "councils_fully_numeric": 286,
+        "types_sum_to_total": 286,
+        "largest_gap": 0.0,
+        "mismatches": []
+      },
+      "councils_without_data": [
+        {
+          "code": "E06000043",
+          "name": "Brighton & Hove",
+          "total_marker": ".."
+        },
+        {
+          "code": "E09000007",
+          "name": "Camden",
+          "total_marker": ".."
+        },
+        {
+          "code": "E07000225",
+          "name": "Chichester",
+          "total_marker": ".."
+        },
+        {
+          "code": "E09000008",
+          "name": "Croydon",
+          "total_marker": ".."
+        },
+        {
+          "code": "E09000009",
+          "name": "Ealing",
+          "total_marker": ".."
+        },
+        {
+          "code": "E07000085",
+          "name": "East Hampshire",
+          "total_marker": ".."
+        },
+        {
+          "code": "E09000017",
+          "name": "Hillingdon",
+          "total_marker": ".."
+        },
+        {
+          "code": "E07000139",
+          "name": "North Kesteven",
+          "total_marker": ".."
+        },
+        {
+          "code": "E07000218",
+          "name": "North Warwickshire",
+          "total_marker": ".."
+        },
+        {
+          "code": "E08000031",
+          "name": "Wolverhampton",
+          "total_marker": ".."
+        }
+      ],
+      "england_published_total": 132340.0,
+      "councils_sum_total": 121239.0
+    },
+    {
+      "extract_file": "la_202509.txt",
+      "extract_sha256": "e14eba69cf9db311ad143c704cddd3c0f56d2d9aa3253841e28bc60a78624657",
+      "source_file": "Statutory_Homelessness_Detailed_Local_Authority_Data_202509_revised.ods",
+      "source_bytes": 1782959,
+      "source_sha256": "ec8dd80960c8be831c2633c52b1adf2feee85ed02b807fc667f636a3dd5234b9",
+      "source_url": "https://assets.publishing.service.gov.uk/media/69f089bd606c20d4121634b7/Statutory_Homelessness_Detailed_Local_Authority_Data_202509_revised.ods",
+      "sheet": "TA1",
+      "title": "Table TA1 - Number of households by type of temporary accommodation provided England, 30 September 2025",
+      "rows": 307,
+      "checks": "sha256, rows, row width, column sums: all match",
+      "browser_check": "layout 2024-25; six types sum to total in 290 of 295 fully numeric rows",
+      "headers": {
+        "code": "",
+        "name": "",
+        "total": "Households in temporary accommodation at end of quarter1 / Total number of households in TA1,2,3,4",
+        "area_households_thousands": "Number of households in area5(000s)",
+        "with_children": "Households in temporary accommodation at end of quarter1children / Total number of households in TA with children",
+        "children": "Total number of children in TA",
+        "bed_and_breakfast": "Bed and breakfast hotels (including shared annexes) / Bed and breakfast hotels (including shared annexes) / Total number of households",
+        "nightly_paid_self_contained": "Nightly paid, privately managed accommodation, self-contained / Nightly paid, privately managed accommodation, self-contained / Total number of households",
+        "hostels": "Hostels (including reception centres, emergency units and refuges) / Hostels (including reception centres, emergency units and refuges) / Total number of households",
+        "private_sector_leased": "Private sector accommodation leased by authority or by a registered provider / Private sector accommodation leased by your authority or leased or managed by a registered provider / Total number of households",
+        "la_ha_stock": "Local authority or Housing association (LA/HA) stock / Local authority or Housing association (LA/HA) stock / Total number of households",
+        "other": "Any other type of temporary accommodation (including private landlord and not known)2 / Any other type of temporary accommodation (including private landlord and not known)7 / Total number of households",
+        "in_ta_in_another_la": "In TA in another local authority district / In TA in another local authority district8",
+        "no_accommodation_secured": "Duty owed, no accommodation secured3 / Duty owed, no accommodation secured9 / Total number of households"
+      },
+      "quarter": "2025-Q3",
+      "snapshot_date": "2025-09-30",
+      "type_check": {
+        "councils": 296,
+        "councils_with_total": 284,
+        "councils_fully_numeric": 284,
+        "types_sum_to_total": 284,
+        "largest_gap": 0.0,
+        "mismatches": []
+      },
+      "councils_without_data": [
+        {
+          "code": "E06000058",
+          "name": "Bournemouth, Christchurch and Poole",
+          "total_marker": ".."
+        },
+        {
+          "code": "E07000107",
+          "name": "Dartford",
+          "total_marker": ".."
+        },
+        {
+          "code": "E09000009",
+          "name": "Ealing",
+          "total_marker": ".."
+        },
+        {
+          "code": "E09000017",
+          "name": "Hillingdon",
+          "total_marker": ".."
+        },
+        {
+          "code": "E07000132",
+          "name": "Hinckley & Bosworth",
+          "total_marker": ".."
+        },
+        {
+          "code": "E09000023",
+          "name": "Lewisham",
+          "total_marker": ".."
+        },
+        {
+          "code": "E06000003",
+          "name": "Redcar & Cleveland",
+          "total_marker": ".."
+        },
+        {
+          "code": "E07000092",
+          "name": "Rushmoor",
+          "total_marker": ".."
+        },
+        {
+          "code": "E08000006",
+          "name": "Salford",
+          "total_marker": ".."
+        },
+        {
+          "code": "E09000028",
+          "name": "Southwark",
+          "total_marker": ".."
+        },
+        {
+          "code": "E06000030",
+          "name": "Swindon",
+          "total_marker": ".."
+        },
+        {
+          "code": "E09000031",
+          "name": "Waltham Forest",
+          "total_marker": ".."
+        }
+      ],
+      "england_published_total": 134700.0,
+      "councils_sum_total": 119171.0
+    },
+    {
+      "extract_file": "la_202512.txt",
+      "extract_sha256": "1abf61339d7595172f57a9ac1f7fdd80ab7255c86f506f2b3362ae83b8d6a0f8",
+      "source_file": "Statutory_Homelessness_Detailed_Local_Authority_Data_202512_revised.ods",
+      "source_bytes": 1179102,
+      "source_sha256": "f8a111e0b5761f6b0ca62a7bc8736f7f57aa971601125c73d9f1d40547f96ad9",
+      "source_url": "https://assets.publishing.service.gov.uk/media/6a8302c63be22055c1aaa3c2/Statutory_Homelessness_Detailed_Local_Authority_Data_202512_revised.ods",
+      "sheet": "TA1",
+      "title": "Table TA1 - Number of households by type of temporary accommodation provided as at 31 December 2025, England, [note 1]",
+      "rows": 307,
+      "checks": "sha256, rows, row width, column sums: all match",
+      "browser_check": "layout 2025-26; six types sum to total in 291 of 300 fully numeric rows",
+      "headers": {
+        "code": "Organisation Identification Code",
+        "name": "Area Name",
+        "total": "Households in TA Total [note 34]",
+        "area_households_thousands": "Households in area (thousands) [note 5]",
+        "with_children": "Households in TA with children Total",
+        "children": "Children in TA Total",
+        "bed_and_breakfast": "Households in B&Bs including shared annexes Total",
+        "nightly_paid_self_contained": "Households in nightly paid, privately managed accommodation, self-contained Total",
+        "hostels": "Households in hostels, including reception centres, emergency units and refuges Total",
+        "private_sector_leased": "Households in private sector accommodation Total",
+        "la_ha_stock": "Households in LA or HA stock Total",
+        "other": "Households in any other type of TA, including private landlord and not known Total [note 35]",
+        "in_ta_in_another_la": "Households owed a TA duty in another LA Total [note 36]",
+        "no_accommodation_secured": "Households in duty owed, no accommodation secured Total [note 37]"
+      },
+      "quarter": "2025-Q4",
+      "snapshot_date": "2025-12-31",
+      "type_check": {
+        "councils": 296,
+        "councils_with_total": 289,
+        "councils_fully_numeric": 289,
+        "types_sum_to_total": 289,
+        "largest_gap": 0.0,
+        "mismatches": []
+      },
+      "councils_without_data": [
+        {
+          "code": "E09000005",
+          "name": "Brent",
+          "total_marker": "[x]"
+        },
+        {
+          "code": "E06000043",
+          "name": "Brighton & Hove",
+          "total_marker": "[x]"
+        },
+        {
+          "code": "E06000023",
+          "name": "Bristol",
+          "total_marker": "[x]"
+        },
+        {
+          "code": "E09000009",
+          "name": "Ealing",
+          "total_marker": "[x]"
+        },
+        {
+          "code": "E07000072",
+          "name": "Epping Forest",
+          "total_marker": "[x]"
+        },
+        {
+          "code": "E06000016",
+          "name": "Leicester",
+          "total_marker": "[x]"
+        },
+        {
+          "code": "E07000114",
+          "name": "Thanet",
+          "total_marker": "[x]"
+        }
+      ],
+      "england_published_total": 134140.0,
+      "councils_sum_total": 124074.0
+    },
+    {
+      "extract_file": "la_202603.txt",
+      "extract_sha256": "54674d2485c598eefc2e4b600da45788524a61b05cc9a063f47b7e14e3b63650",
+      "source_file": "Statutory_Homelessness_Detailed_Local_Authority_Data_202603.ods",
+      "source_bytes": 1180681,
+      "source_sha256": "f77eebd761455169626dc04c70f45177b11704999a6094384b59f37fa56d1881",
+      "source_url": "https://assets.publishing.service.gov.uk/media/6a82eeb83bd75b81e2329a7a/Statutory_Homelessness_Detailed_Local_Authority_Data_202603.ods",
+      "sheet": "TA1",
+      "title": "Table TA1 - Number of households by type of temporary accommodation provided as at 31 March 2026, England, [note 1]",
+      "rows": 307,
+      "checks": "sha256, rows, row width, column sums: all match",
+      "browser_check": "layout 2025-26; six types sum to total in 290 of 295 fully numeric rows",
+      "headers": {
+        "code": "Organisation Identification Code",
+        "name": "Area Name",
+        "total": "Households in TA Total [note 34]",
+        "area_households_thousands": "Households in area (thousands) [note 5]",
+        "with_children": "Households in TA with children Total",
+        "children": "Children in TA Total",
+        "bed_and_breakfast": "Households in B&Bs including shared annexes Total",
+        "nightly_paid_self_contained": "Households in nightly paid, privately managed accommodation, self-contained Total",
+        "hostels": "Households in hostels, including reception centres, emergency units and refuges Total",
+        "private_sector_leased": "Households in private sector accommodation Total",
+        "la_ha_stock": "Households in LA or HA stock Total",
+        "other": "Households in any other type of TA, including private landlord and not known Total [note 35]",
+        "in_ta_in_another_la": "Households owed a TA duty in another LA Total [note 36]",
+        "no_accommodation_secured": "Households in duty owed, no accommodation secured Total [note 37]"
+      },
+      "quarter": "2026-Q1",
+      "snapshot_date": "2026-03-31",
+      "type_check": {
+        "councils": 296,
+        "councils_with_total": 284,
+        "councils_fully_numeric": 284,
+        "types_sum_to_total": 284,
+        "largest_gap": 0.0,
+        "mismatches": []
+      },
+      "councils_without_data": [
+        {
+          "code": "E07000105",
+          "name": "Ashford",
+          "total_marker": "[x]"
+        },
+        {
+          "code": "E07000066",
+          "name": "Basildon",
+          "total_marker": "[x]"
+        },
+        {
+          "code": "E06000023",
+          "name": "Bristol",
+          "total_marker": "[x]"
+        },
+        {
+          "code": "E07000069",
+          "name": "Castle Point",
+          "total_marker": "[x]"
+        },
+        {
+          "code": "E07000112",
+          "name": "Folkestone & Hythe",
+          "total_marker": "[x]"
+        },
+        {
+          "code": "E07000194",
+          "name": "Lichfield",
+          "total_marker": "[x]"
+        },
+        {
+          "code": "E06000012",
+          "name": "North East Lincolnshire",
+          "total_marker": "[x]"
+        },
+        {
+          "code": "E06000003",
+          "name": "Redcar & Cleveland",
+          "total_marker": "[x]"
+        },
+        {
+          "code": "E07000124",
+          "name": "Ribble Valley",
+          "total_marker": "[x]"
+        },
+        {
+          "code": "E06000039",
+          "name": "Slough",
+          "total_marker": "[x]"
+        },
+        {
+          "code": "E07000083",
+          "name": "Tewkesbury",
+          "total_marker": "[x]"
+        },
+        {
+          "code": "E07000128",
+          "name": "Wyre",
+          "total_marker": "[x]"
+        }
+      ],
+      "england_published_total": 135580.0,
+      "councils_sum_total": 130775.0
+    }
+  ]
+}

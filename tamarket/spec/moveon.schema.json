@@ -1,0 +1,200 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "tamarket/spec/moveon.schema.json",
+ "title": "Move-forward plan draft for a synthetic household",
+ "description": "Drafted by AI for a housing officer to review. Suggestions only, never decisions. Every claim carries a confidence.",
+ "type": "object",
+ "additionalProperties": false,
+ "required": [
+  "schema_version",
+  "household_id",
+  "record_is_synthetic",
+  "status",
+  "summary",
+  "pathway_suggestions",
+  "steps",
+  "officer_checks",
+  "risks"
+ ],
+ "properties": {
+  "schema_version": {
+   "const": "1"
+  },
+  "household_id": {
+   "type": "string",
+   "minLength": 8,
+   "maxLength": 8,
+   "pattern": "^SYN-[0-9]{4}$"
+  },
+  "record_is_synthetic": {
+   "const": true
+  },
+  "status": {
+   "const": "draft for officer review"
+  },
+  "summary": {
+   "$ref": "#/$defs/claim"
+  },
+  "pathway_suggestions": {
+   "type": "array",
+   "minItems": 1,
+   "maxItems": 3,
+   "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+     "pathway_id",
+     "why",
+     "confidence"
+    ],
+    "properties": {
+     "pathway_id": {
+      "$ref": "#/$defs/pathway_id"
+     },
+     "why": {
+      "$ref": "#/$defs/text"
+     },
+     "confidence": {
+      "$ref": "#/$defs/confidence"
+     }
+    }
+   }
+  },
+  "steps": {
+   "type": "array",
+   "minItems": 1,
+   "maxItems": 12,
+   "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+     "text",
+     "owner",
+     "confidence"
+    ],
+    "properties": {
+     "text": {
+      "$ref": "#/$defs/text"
+     },
+     "owner": {
+      "$ref": "#/$defs/owner"
+     },
+     "confidence": {
+      "$ref": "#/$defs/confidence"
+     }
+    }
+   }
+  },
+  "officer_checks": {
+   "type": "array",
+   "minItems": 1,
+   "maxItems": 20,
+   "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+     "text",
+     "pathway_id",
+     "confidence"
+    ],
+    "properties": {
+     "text": {
+      "$ref": "#/$defs/text"
+     },
+     "pathway_id": {
+      "enum": [
+       "social-housing",
+       "prs-offer",
+       "supported-housing",
+       "general"
+      ]
+     },
+     "confidence": {
+      "$ref": "#/$defs/confidence"
+     }
+    }
+   }
+  },
+  "risks": {
+   "type": "array",
+   "minItems": 1,
+   "maxItems": 10,
+   "items": {
+    "$ref": "#/$defs/claim"
+   }
+  },
+  "responds_to_review": {
+   "description": "One answer per reviewer note given in the prompt: what this draft changed because of the note, or why it could not. Left out when no notes are given.",
+   "type": "array",
+   "minItems": 1,
+   "maxItems": 5,
+   "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+     "note",
+     "change",
+     "confidence"
+    ],
+    "properties": {
+     "note": {
+      "type": "string",
+      "pattern": "^review-[1-5]$"
+     },
+     "change": {
+      "$ref": "#/$defs/text"
+     },
+     "confidence": {
+      "$ref": "#/$defs/confidence"
+     }
+    }
+   }
+  }
+ },
+ "$defs": {
+  "text": {
+   "type": "string",
+   "minLength": 1,
+   "maxLength": 600
+  },
+  "confidence": {
+   "enum": [
+    "Certain",
+    "Likely",
+    "Guessing"
+   ]
+  },
+  "owner": {
+   "enum": [
+    "officer",
+    "household",
+    "support worker",
+    "landlord or agent",
+    "another team"
+   ]
+  },
+  "pathway_id": {
+   "enum": [
+    "social-housing",
+    "prs-offer",
+    "supported-housing"
+   ]
+  },
+  "claim": {
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "text",
+    "confidence"
+   ],
+   "properties": {
+    "text": {
+     "$ref": "#/$defs/text"
+    },
+    "confidence": {
+     "$ref": "#/$defs/confidence"
+    }
+   }
+  }
+ }
+}

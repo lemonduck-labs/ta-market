@@ -1,0 +1,5 @@
+# Per-path switches for: python -m fdcore.guardrails --git . --policy config/guardrails_policy.txt
+# Only "accusing" and "phone" can be switched off, and only for the paths named here.
+.claude/agents/* accusing                        # agent instructions name what the screen blocks
+.claude/commands/* accusing
+demo/ta/*.json phone                     # money in pounds and counts, not phone numbers

@@ -1,0 +1,7 @@
+{
+  "private": true,
+  "description": "Browser flows for the Move forward planner page, run against a mock of the platform's capabilities.",
+  "devDependencies": {
+    "playwright": "1.64.1"
+  }
+}

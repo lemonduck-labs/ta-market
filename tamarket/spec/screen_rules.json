@@ -1,0 +1,456 @@
+{
+ "spec_version": "1",
+ "about": "Rules for screening an AI-drafted move-forward plan before an officer sees it: the plan must match moveon.schema.json, be for a synthetic record, suggest only pathways listed for that record, and no text in it may state a decision, name a person or a provider, use a figure that is not in the record, or trip the fd-core guardrails screen. A net, not a guarantee: the officer reads every plan. Python reference: tamarket/moveon.py (screen_plan). Cases a port must pass: screen_cases.json.",
+ "regex_dialect": "Patterns use only syntax that Python's re (with re.ASCII) and JavaScript's RegExp read the same way: no lookbehind, no named groups, no inline flags, no possessive quantifiers. Text is normalised and checked to be ASCII (the pound sign aside) before any pattern runs, so word characters and boundaries agree. flags \"i\" means case-insensitive; matching is global and non-overlapping, left to right.",
+ "order": [
+  "normalise",
+  "style",
+  "schema",
+  "record",
+  "pathway",
+  "fdcore",
+  "decision",
+  "person",
+  "figure",
+  "review"
+ ],
+ "skip_keys": [
+  "schema_version",
+  "household_id",
+  "record_is_synthetic",
+  "status",
+  "pathway_id",
+  "confidence",
+  "owner",
+  "note"
+ ],
+ "text_fields": "Every string in the plan whose key is not in skip_keys, found by walking objects and arrays.",
+ "normalise": {
+  "replace": [
+   [
+    "\u2018",
+    "'"
+   ],
+   [
+    "\u2019",
+    "'"
+   ],
+   [
+    "\u201a",
+    "'"
+   ],
+   [
+    "\u201b",
+    "'"
+   ],
+   [
+    "\u201c",
+    "\""
+   ],
+   [
+    "\u201d",
+    "\""
+   ],
+   [
+    "\u2013",
+    "-"
+   ],
+   [
+    "\u00a0",
+    " "
+   ],
+   [
+    "\u2026",
+    "..."
+   ],
+   [
+    "\r\n",
+    "\n"
+   ],
+   [
+    "\r",
+    "\n"
+   ]
+  ],
+  "about": "Applied to every string in the plan, in this order, before anything else. The screened, normalised plan is the one to show and store."
+ },
+ "style": {
+  "rule": "style",
+  "em_dash": "\u2014",
+  "disallowed_chars": {
+   "pattern": "[^\\t\\n\\x20-\\x7e\\u00a3]",
+   "flags": ""
+  },
+  "about": "No em dashes (house style), and nothing outside printable ASCII, tab, newline and the pound sign."
+ },
+ "record": {
+  "rule": "record",
+  "household_id_must_match": true,
+  "record_must_be_synthetic": true
+ },
+ "pathway": {
+  "rule": "pathway",
+  "about": "pathway_suggestions may only use pathway ids listed for the record; officer_checks may use those or \"general\". The record's eligible_pathways list is used when it is present (the caseload file carries it); otherwise the Python reference works it out.",
+  "check_values": [
+   "general"
+  ]
+ },
+ "fdcore": {
+  "rule_prefix": "fdcore:",
+  "about": "fd-core's guardrails screen (fdcore.guardrails.scan_text) runs on every text field: company names, email addresses, UK postcodes, phone numbers, deny-list names and accusing language.",
+  "patterns_file": "fdcore_patterns.json",
+  "generated_by": "python scripts/export_fdcore_patterns.py",
+  "in_git": false,
+  "why_not_in_git": "It lists the words the screen blocks, which the repository's own screen would flag. Generating it from fd-core keeps it exact and leaves the policy file unchanged.",
+  "deny_list": "Never shipped to a page. A server-side function passes it in."
+ },
+ "references": {
+  "about": "Legal references are replaced by \" ref \" before the decision, person and figure rules run, so section and paragraph numbers are neither figures nor clause breaks.",
+  "patterns": [
+   "\\b(?:s|ss)\\.\\s?[0-9]+[A-Z]{0,3}(?:\\([0-9]+[A-Z]{0,3}\\))*(?:\\([a-z]{1,3}\\))*(?:\\s?(?:,|and|or|to|-)\\s?(?:[0-9]+[A-Z]{0,3}(?:\\([0-9]+[A-Z]{0,3}\\))*(?:\\([a-z]{1,3}\\))*|\\([0-9]+[A-Z]{0,3}\\)(?:\\([a-z]{1,3}\\))*))*",
+   "\\bsections?\\s[0-9]+[A-Z]{0,3}(?:\\([0-9]+[A-Z]{0,3}\\))*(?:\\([a-z]{1,3}\\))*(?:\\s?(?:,|and|or|to|-)\\s?(?:[0-9]+[A-Z]{0,3}(?:\\([0-9]+[A-Z]{0,3}\\))*(?:\\([a-z]{1,3}\\))*|\\([0-9]+[A-Z]{0,3}\\)(?:\\([a-z]{1,3}\\))*))*",
+   "\\b(?:art|arts|article|articles)\\.?\\s?[0-9]+[A-Z]{0,3}(?:\\([0-9]+[A-Z]{0,3}\\))*(?:\\([a-z]{1,3}\\))*(?:\\s?(?:,|and|or|to|-)\\s?(?:[0-9]+[A-Z]{0,3}(?:\\([0-9]+[A-Z]{0,3}\\))*(?:\\([a-z]{1,3}\\))*|\\([0-9]+[A-Z]{0,3}\\)(?:\\([a-z]{1,3}\\))*))*",
+   "\\b(?:paragraph|paragraphs|para|paras)\\.?\\s?[0-9]+(?:\\.[0-9]+)?(?:\\([a-z]{1,3}\\))*(?:\\s?(?:,|and|or|to|-)\\s?[0-9]+(?:\\.[0-9]+)?(?:\\([a-z]{1,3}\\))*)*",
+   "\\bcode\\s[0-9]+\\.[0-9]+(?:\\([a-z]{1,3}\\))*(?:\\s?(?:,|and|or|to|-)\\s?[0-9]+(?:\\.[0-9]+)?(?:\\([a-z]{1,3}\\))*)*",
+   "\\b(?:chapter|chapters)\\s[0-9]+(?:\\s?(?:,|and|or|to|-)\\s?[0-9]+)*",
+   "\\bparts?\\s[0-9]+(?:\\s?(?:,|and|or|to|-)\\s?[0-9]+)*",
+   "\\bschedule\\s[0-9]+",
+   "\\b(?:reg|regs|regulation|regulations)\\.?\\s[0-9]+(?:\\([0-9]+\\))*(?:\\([a-z]{1,3}\\))*(?:\\s?(?:,|and|or|to|-)\\s?[0-9]+(?:\\([0-9]+\\))*(?:\\([a-z]{1,3}\\))*)*",
+   "\\b(?:act|order|regulations|rules)\\s(?:19|20)[0-9]{2}\\b",
+   "\\b(?:19|20)[0-9]{2}\\s(?:act|order|regulations)\\b",
+   "\\bs\\.?i\\.?\\s(?:19|20)[0-9]{2}/[0-9]+",
+   "\\bcategory\\s1\\b"
+  ],
+  "flags": "i",
+  "replacement": " ref "
+ },
+ "decision": {
+  "rule": "decision",
+  "about": "Text that states a decision: that a duty has ended, that a household is eligible, suitable or owed something, that an offer is approved or refused, or that the household must accept or move, or tells the officer to end a duty, close the case or approve or refuse an offer; or that states for the officer what only the officer decides: that checks are not needed, or how high a priority the household is; or that states a saving to the council as fact, which the planner never does (the scenario calculator works on figures the user sets). Suggestions and checks pass: \"could\", \"check whether\", \"if ... then ...\".",
+  "sentence_split": {
+   "pattern": "[.!?]+(?=\\s|$)|[;\\n]+",
+   "flags": ""
+  },
+  "clause_split": {
+   "pattern": "[,;:.!?()]|\\s(?:but|and then|whereas|while)\\s",
+   "flags": "i"
+  },
+  "conditional_opener": {
+   "pattern": "^\\s*(?:if|once|when|where|unless|should|until|before|after|provided|subject to|only if)\\b",
+   "flags": "i"
+  },
+  "strong_hedge": {
+   "pattern": "\\b(?:if|whether|unless|once|until|when|before|after|provided)\\b",
+   "flags": "i"
+  },
+  "soft_hedge": {
+   "pattern": "\\b(?:if|whether|unless|once|until|when|before|after|provided|may|might|could|would|can|check|checks|checking|confirm|confirms|assess|assesses|consider|considers|review|appears|appear|seems|seem|likely|unlikely|possible|possibly|subject to|to be confirmed|for the officer)\\b",
+   "flags": "i"
+  },
+  "how": "Split each text into sentences. A sentence that opens with a conditional word is hedged throughout. Otherwise a hard pattern passes only when a strong hedge sits in the same clause, a soft pattern only when a soft hedge sits in the same sentence, and a never_hedged pattern never passes.",
+  "hard": [
+   "\\b(?:has|have|had) been (?:approved|accepted|agreed|refused|rejected|declined|granted|denied|awarded|allocated|decided|determined|discharged|ended|closed|secured|confirmed|withdrawn)\\b",
+   "\\b(?:we|i|the council|the authority|the local authority|the housing authority|the officer|the panel|the team|this plan) (?:has |have |had )?(?:now )?(?:decided|determined|approved|refused|rejected|concluded|agreed|confirmed|accepted|discharged|ended)\\b",
+   "\\b(?:main|relief|prevention|housing|homelessness|accommodation|interim) duty (?:has|is|was) (?:now )?(?:been )?(?:ended|discharged|ceased|met|brought to an end|come to an end)\\b",
+   "\\b(?:duty|duties) (?:will|shall) (?:now )?(?:end|cease|be discharged|be ended|come to an end)\\b",
+   "\\b(?:must|shall|will) (?:now )?(?:accept|take up|move into|move to|leave|sign|vacate)\\b",
+   "\\b(?:offer|application|referral|request|nomination|bid|move|tenancy|plan) (?:is|was|are|were) (?:now )?(?:approved|accepted|refused|rejected|declined|granted|denied|confirmed|secured|agreed)\\b",
+   "\\b(?:we|the council|the authority|the officer) (?:will|shall) (?:now )?(?:end|discharge|close|cease|evict|withdraw)\\b",
+   "\\b(?:has|have) (?:now )?(?:decided|determined)\\b",
+   "\\b(?:saves|will save|would save|is saving|are saving|saving) (?:the council|the authority|the local authority|money|\u00a3)",
+   "\\b(?:cuts|will cut|would cut|reduces|will reduce|would reduce|lowers|will lower|would lower) (?:the )?(?:council's |authority's )?(?:costs?|spend|spending|bill)\\b",
+   "\\b(?:check|checks|assessment|assessments|inspection|inspections|visit|visits)\\b[^.;\\n]{0,40}\\b(?:is|are) (?:not|no longer) (?:needed|required|necessary)\\b",
+   "\\bno (?:need|requirement) (?:for|to) (?:the |any )?(?:check|checks|assess|assessment|assessments|inspect|inspection|visit)\\b",
+   "\\b(?:is|are|as) (?:a )?(?:very )?(?:low|lower|high|higher|top) priority\\b",
+   "\\b(?:deprioritise|deprioritised|deprioritize|deprioritized)\\b",
+   "\\bdischarg(?:e|es|ing)\\s+(?:of\\s+)?(?:the\\s+|its\\s+|our\\s+)?(?:main\\s+|relief\\s+|prevention\\s+|housing\\s+|homelessness\\s+|accommodation\\s+|interim\\s+|full\\s+)*dut(?:y|ies)\\b",
+   "^\\s*(?:end|close|cease)\\s+(?:the\\s+|its\\s+)?(?:main\\s+|relief\\s+|prevention\\s+|housing\\s+|homelessness\\s+|accommodation\\s+|interim\\s+|full\\s+)*(?:duty|duties|case)\\b",
+   "^\\s*(?:approve|refuse|reject|accept|award|allocate|grant|deny|decline|withdraw)\\s+(?:the\\s+|this\\s+|its\\s+)?(?:offer|application|referral|request|nomination|bid|move|tenancy|plan|property|placement|case)\\b"
+  ],
+  "soft": [
+   "\\b(?:is|are|was|were) (?:now |not |no longer )?(?:eligible|ineligible|entitled|in priority need|intentionally homeless|suitable|unsuitable|owed)\\b"
+  ],
+  "never_hedged": [
+   "\\b(?:decision|outcome|verdict)\\s*:",
+   "\\b(?:save|saves|saved|saving|savings)\\b[^.;\\n]{0,40}\u00a3\\s?[0-9]",
+   "\u00a3\\s?[0-9][0-9,]*(?:\\.[0-9]+)?\\s?(?:a|per|each) (?:week|month|year|night)[^.;\\n]{0,20}\\b(?:saved|saving|savings|less)\\b"
+  ],
+  "flags": "i"
+ },
+ "person": {
+  "rule": "person",
+  "about": "Names of people or providers. Any title before a capitalised word, any capitalised word that is not at the start of a sentence and not in allowed_words, and any word in capitals not in allowed_acronyms. The prompt asks for sentence case, so a capitalised word mid-sentence is treated as a name until it is listed here.",
+  "honorific": {
+   "pattern": "\\b(?:Mr|Mrs|Ms|Miss|Mx|Dr|Prof|Sir|Dame|Lord|Lady|Cllr|Councillor|Rev)\\.?\\s+[A-Z][A-Za-z']*",
+   "flags": ""
+  },
+  "capitalised_word": {
+   "pattern": "\\b[A-Z][a-z][A-Za-z']*",
+   "flags": ""
+  },
+  "acronym": {
+   "pattern": "\\b[A-Z]{2,}\\b",
+   "flags": ""
+  },
+  "word_endings_removed": [
+   "'s",
+   "'"
+  ],
+  "sentence_start": "A word starts a sentence when, skipping back over the characters in skip_back, the text starts there or the character reached is in starts.",
+  "skip_back": " \t\"'([",
+  "starts": ".!?:;\n",
+  "allowed_words": [
+   "Abuse",
+   "Accommodation",
+   "Act",
+   "Acts",
+   "Adult",
+   "Adults",
+   "Alarm",
+   "Alarms",
+   "Allocation",
+   "Allocations",
+   "Annex",
+   "April",
+   "Archives",
+   "Article",
+   "Articles",
+   "Assured",
+   "August",
+   "Authorities",
+   "Authority",
+   "Bed",
+   "Benefit",
+   "Breakfast",
+   "Carbon",
+   "Care",
+   "Category",
+   "Certificate",
+   "Certificates",
+   "Chapter",
+   "Chapters",
+   "Child",
+   "Children",
+   "Code",
+   "Codes",
+   "Commencement",
+   "Communities",
+   "Council",
+   "Councils",
+   "Credit",
+   "December",
+   "Department",
+   "Domestic",
+   "Electrical",
+   "Energy",
+   "England",
+   "English",
+   "Equipment",
+   "Expectations",
+   "Families",
+   "February",
+   "Fire",
+   "Friday",
+   "Gas",
+   "Government",
+   "Guidance",
+   "Health",
+   "Homeless",
+   "Homelessness",
+   "House",
+   "Houses",
+   "Housing",
+   "Inspections",
+   "Installation",
+   "January",
+   "July",
+   "June",
+   "Leaver",
+   "Leavers",
+   "Local",
+   "March",
+   "May",
+   "Mental",
+   "Ministry",
+   "Monday",
+   "Monoxide",
+   "Multiple",
+   "National",
+   "Need",
+   "November",
+   "Occupation",
+   "October",
+   "Offer",
+   "Offers",
+   "Officer",
+   "Officers",
+   "Order",
+   "Orders",
+   "Oversight",
+   "Panel",
+   "Paragraph",
+   "Paragraphs",
+   "Part",
+   "Parts",
+   "Pensions",
+   "Performance",
+   "Priority",
+   "Private",
+   "Probation",
+   "Provider",
+   "Providers",
+   "Provisions",
+   "Reduction",
+   "Registered",
+   "Regulation",
+   "Regulations",
+   "Regulatory",
+   "Rented",
+   "Renters",
+   "Rights",
+   "Rules",
+   "Safety",
+   "Saturday",
+   "Saving",
+   "Schedule",
+   "Secretary",
+   "Section",
+   "Sections",
+   "Sector",
+   "September",
+   "Service",
+   "Services",
+   "Shorthold",
+   "Smoke",
+   "Social",
+   "State",
+   "Statement",
+   "Stationery",
+   "Suitability",
+   "Sunday",
+   "Supported",
+   "Team",
+   "Teams",
+   "Temporary",
+   "Tenancies",
+   "Tenancy",
+   "Thursday",
+   "Transitional",
+   "Tuesday",
+   "Universal",
+   "Use",
+   "Wales",
+   "Wednesday",
+   "Work"
+  ],
+  "allowed_acronyms": [
+   "TA",
+   "PRSO",
+   "PRS",
+   "AST",
+   "APT",
+   "EPC",
+   "HMO",
+   "HHSRS",
+   "LA",
+   "HA",
+   "RP",
+   "PRP",
+   "UK",
+   "MHCLG",
+   "DLUHC",
+   "DWP",
+   "OGL",
+   "NSE",
+   "SI",
+   "SYN",
+   "NHS",
+   "GP",
+   "HB",
+   "UC",
+   "CO"
+  ]
+ },
+ "figure": {
+  "rule": "figure",
+  "about": "Every figure in the text must be a figure in the household record, or a statutory figure listed in pathways.json (removed, with its aliases, before the check), or part of a legal reference.",
+  "remove_first": [
+   "the record id",
+   "statutory figures and their aliases from pathways.json, longest first, matched without regard to case"
+  ],
+  "number": {
+   "pattern": "[0-9]+(?:,[0-9]{3})*(?:\\.[0-9]+)?",
+   "flags": ""
+  },
+  "number_words": {
+   "two": 2,
+   "three": 3,
+   "four": 4,
+   "five": 5,
+   "six": 6,
+   "seven": 7,
+   "eight": 8,
+   "nine": 9,
+   "ten": 10,
+   "eleven": 11,
+   "twelve": 12,
+   "thirteen": 13,
+   "fourteen": 14,
+   "fifteen": 15,
+   "sixteen": 16,
+   "seventeen": 17,
+   "eighteen": 18,
+   "nineteen": 19,
+   "twenty": 20,
+   "thirty": 30,
+   "forty": 40,
+   "fifty": 50,
+   "sixty": 60,
+   "seventy": 70,
+   "eighty": 80,
+   "ninety": 90,
+   "hundred": 100,
+   "thousand": 1000,
+   "million": 1000000
+  },
+  "number_words_note": "\"one\" is left out on purpose: it is mostly a pronoun (\"no one\", \"one of\").",
+  "record_figures": "Every number value in the record, and every number found with the number pattern in its text values, except under the keys in record_keys_ignored.",
+  "record_keys_ignored": [
+   "id",
+   "record_type",
+   "eligible_pathways",
+   "suitability_checks"
+  ],
+  "compare": "Commas are removed, the figure is read as a decimal number, and it passes when it equals a record figure."
+ },
+ "output": {
+  "passed": "true when no problem is found",
+  "problems": "a list of {path, rule, detail}; path is like steps[0].text; rule is one of style, schema, record, pathway, decision, person, figure, review, or fdcore: followed by the fd-core kind",
+  "plan": "the plan after normalising"
+ },
+ "review": {
+  "rule": "review",
+  "about": "Reviewer notes: what an officer wrote when they returned or rejected an earlier version of the plan. They are built from the household's decisions since its last approval that counts, oldest first, keeping the latest max_notes, with ids review-1 upwards: a returned plan gives its note, a rejected plan gives its reason's label and then, after a colon, its note when there is one. They reach the prompt and the screen apart from the record and never extend it: no figure or word in a note becomes allowed in the plan. A note is used only when it passes the note checks; a note that fails is held back, shown to the officer and not required in the draft. Python reference: tamarket/moveon.py (review_notes_from, usable_notes); JavaScript: prompt.mjs (reviewNotesFrom) and screen.mjs (usableNotes).",
+  "max_notes": 5,
+  "max_note_length": 480,
+  "note_id": {
+   "pattern": "^review-[1-5]$",
+   "flags": ""
+  },
+  "reject_labels": {
+   "changed": "The record or the circumstances have changed",
+   "duplicate": "Another plan covers this household",
+   "not_needed": "No move-forward plan is needed now",
+   "other": "Other (see the note)"
+  },
+  "reject_label_unknown": "Rejected",
+  "note_checks": "On the note's text, normalised as the plan is and trimmed: style (no em dash, nothing outside printable ASCII and the pound sign), the fd-core screen (with the deny list where a server holds it), the person rule (the record id removed first), instruction (each line, the first match only) and length (more than max_note_length characters). Figures are not checked: a note may quote one, and the plan may still use only the record's.",
+  "instruction": {
+   "pattern": "\\b(?:ignore|disregard|forget|override|bypass|skip)\\b[^.\\n]{0,40}\\b(?:instructions?|prompts?|screen|your\\s+rules|rules\\s+above|previous\\s+rules)\\b|\\b(?:system|developer)\\s+(?:prompt|message|instructions?)\\b|\\byou\\s+are\\s+now\\b|\\bnew\\s+instructions?\\b|\\b(?:act|behave|respond)\\s+as\\s+if\\s+you\\b|\\bpretend\\s+(?:to\\s+be|you|that)\\b|={3}\\s*(?:system|user|assistant)\\s*={3}|-{3}\\s*prompt\\s*-{3}|</?\\s*(?:system|user|assistant|instructions?)\\s*>|\\b(?:name|identify|reveal|list)\\s+the\\s+(?:landlords?|agents?|providers?|hotels?|persons?|people|tenants?|officers?)\\b",
+   "flags": "i",
+   "about": "Words that read as instructions to the drafting model rather than an officer's point about the plan, or that ask it to name someone. Kept narrow, since checks, rules and guidance are ordinary words in a housing note. A net, not a guarantee: the prompt also tells the model that notes are data, and the reply is screened."
+  },
+  "placeholder": "To be written: what this draft changed because of the note.",
+  "answers": "When notes are given, responds_to_review must answer each note id once and no other. Each of these is a problem with rule review: a note with no answer, an answer to a note id not given, a note answered more than once, and an answer whose change, normalised and trimmed, is the placeholder. With no notes, responds_to_review must be left out (any answer is to a note not given). An answer's change is a text field like any other, so every other rule applies to it."
+ }
+}

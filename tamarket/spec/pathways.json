@@ -1,0 +1,753 @@
+{
+ "spec_version": "1",
+ "status": "Suggestions for an officer to approve, never decisions.",
+ "read_on": "21 October 2026",
+ "about": "Routes out of temporary accommodation and suitability checks from official guidance and legislation only, for synthetic household records. Each pathway and check has a stable id, a condition a program can evaluate (field, operator, value) and the same condition in words. Paragraph numbers are as read on 21 October 2026 and can move when GOV.UK updates the code. Official links, with the date each was read, are in references.json.",
+ "condition_language": {
+  "always": "true for every record: {\"always\": true}",
+  "eq": "field equals value",
+  "ne": "field does not equal value",
+  "in": "field is one of the values listed",
+  "gt": "field is a number above value",
+  "gte": "field is a number at or above value",
+  "lt": "field is a number below value",
+  "lte": "field is a number at or below value",
+  "contains": "field is a list that holds value",
+  "nonempty": "field is a list or text with something in it",
+  "all": "every condition listed holds: {\"all\": [...]}",
+  "any": "at least one holds: {\"any\": [...]}",
+  "not": "the condition does not hold: {\"not\": {...}}",
+  "missing_field": "a condition on a field the record does not have is false"
+ },
+ "statutory_figures": [
+  {
+   "text": "6 weeks",
+   "aliases": [
+    "six weeks"
+   ],
+   "what": "longest total time in B&B for an applicant with family commitments, and only where no other accommodation is available",
+   "citations": [
+    "si-2003-3326",
+    "code-ch17"
+   ]
+  },
+  {
+   "text": "14 days",
+   "aliases": [
+    "fourteen days"
+   ],
+   "what": "time limit for the written notice to the council where an out-of-district placement is",
+   "citations": [
+    "ha1996-s208"
+   ]
+  },
+  {
+   "text": "16 and 17 year old",
+   "aliases": [
+    "16 or 17 year old",
+    "16 and 17",
+    "16 or 17"
+   ],
+   "what": "applicants for whom the code rules out B&B",
+   "citations": [
+    "code-ch17"
+   ]
+  },
+  {
+   "text": "12 months",
+   "aliases": [
+    "twelve months"
+   ],
+   "what": "shortest assured shorthold tenancy that counts as a private rented sector offer under the earlier rules, which still apply to social housing tenancies from private registered providers",
+   "citations": [
+    "code-ch15",
+    "code-overview"
+   ]
+  },
+  {
+   "text": "2 years",
+   "aliases": [
+    "two years"
+   ],
+   "what": "period after accepting a private rented sector offer in which the s.195A reapplication duty applies, where that duty still applies",
+   "citations": [
+    "code-ch15",
+    "si-2026-421"
+   ]
+  },
+  {
+   "text": "1 May 2026",
+   "aliases": [],
+   "what": "date the Renters' Rights Act 2025 tenancy reforms commenced for assured tenancies that are not social housing",
+   "citations": [
+    "si-2026-421",
+    "rra2025-s25",
+    "code-overview"
+   ]
+  },
+  {
+   "text": "October 2027",
+   "aliases": [],
+   "what": "when the Renters' Rights Act 2025 tenancy reforms are expected to start for social housing tenancies from private registered providers (a date to be confirmed)",
+   "citations": [
+    "code-overview"
+   ]
+  },
+  {
+   "text": "under 25",
+   "aliases": [
+    "aged under 25"
+   ],
+   "what": "care leavers for whom the code says B&B, hotels and nightly-let accommodation with shared facilities are not suitable",
+   "citations": [
+    "code-ch22"
+   ]
+  }
+ ],
+ "general_checks": [
+  {
+   "id": "general.duty",
+   "text": "Confirm which duty the household is owed: interim accommodation under s.188(1), the relief duty under s.189B or the main housing duty under s.193(2). The pathways that end a duty assume the main housing duty.",
+   "citations": [
+    "ha1996-s193",
+    "code-ch15",
+    "code-ch17"
+   ],
+   "confidence": "Certain"
+  },
+  {
+   "id": "general.wishes",
+   "text": "Take account of the wishes, needs and circumstances of the household, as the code asks when assessing affordability (Code 17.48), and record them before any step.",
+   "citations": [
+    "code-ch17"
+   ],
+   "confidence": "Likely"
+  }
+ ],
+ "pathways": [
+  {
+   "id": "social-housing",
+   "title": "Social housing through the allocation scheme (Part 6)",
+   "summary": "An offer of social housing under the council's allocation scheme. Accepting a suitable Part 6 offer ends the main housing duty.",
+   "ends_main_duty": true,
+   "applies_when": {
+    "always": true
+   },
+   "applies_when_text": "Every household in TA; the officer confirms the duty owed.",
+   "reasons": [
+    {
+     "id": "social-housing.r1",
+     "text": "The allocation scheme must give reasonable preference to people who are homeless within the meaning of Part 7 and to people owed the main housing duty under s.193(2) (s.166A(3)(a) and (b)).",
+     "citations": [
+      "ha1996-s166a",
+      "allocation-guidance"
+     ],
+     "confidence": "Certain"
+    },
+    {
+     "id": "social-housing.r2",
+     "text": "The main housing duty ends when the applicant accepts a suitable offer of accommodation under Part 6 (s.193(6)(c); Code 15.38(a)).",
+     "citations": [
+      "ha1996-s193",
+      "code-ch15"
+     ],
+     "confidence": "Certain"
+    }
+   ],
+   "officer_checks": [
+    {
+     "id": "social-housing.c1",
+     "text": "Check that the household is eligible for an allocation and qualifies under the allocation scheme (allocation guidance, paragraphs 3.2 and 3.30).",
+     "citations": [
+      "allocation-guidance"
+     ],
+     "confidence": "Certain"
+    },
+    {
+     "id": "social-housing.c2",
+     "text": "Check that any offer is suitable for the household, including space, location and affordability (s.193(7F); Code chapter 17).",
+     "citations": [
+      "ha1996-s193",
+      "code-ch17"
+     ],
+     "confidence": "Certain"
+    },
+    {
+     "id": "social-housing.c3",
+     "text": "If an offer is to be a final offer, check that it is made in writing and says that it is a final offer, and that the household has been told the possible consequences of refusal or acceptance and of the right to ask for a review of suitability (s.193(7) and (7A); Code 15.38(c)).",
+     "citations": [
+      "ha1996-s193",
+      "code-ch15"
+     ],
+     "confidence": "Certain"
+    },
+    {
+     "id": "social-housing.c4",
+     "text": "Check whether the household has obligations on its current accommodation that it cannot end before it would have to take up the offer (s.193(7F) and (8)).",
+     "citations": [
+      "ha1996-s193"
+     ],
+     "confidence": "Certain"
+    }
+   ],
+   "notes": [
+    {
+     "id": "social-housing.n-medical",
+     "when": {
+      "any": [
+       {
+        "field": "support_needs",
+        "op": "contains",
+        "value": "physical ill health and disability"
+       },
+       {
+        "field": "support_needs",
+        "op": "contains",
+        "value": "history of mental health problems"
+       },
+       {
+        "field": "support_needs",
+        "op": "contains",
+        "value": "learning disability"
+       }
+      ]
+     },
+     "when_text": "The record lists physical ill health and disability, mental health problems or a learning disability.",
+     "text": "The scheme must also give reasonable preference to people who need to move on medical or welfare grounds, including grounds relating to a disability (s.166A(3)(d)); check what the household's medical or welfare needs require of an offer, including any adaptations (Code 17.5).",
+     "citations": [
+      "ha1996-s166a",
+      "code-ch17"
+     ],
+     "confidence": "Certain"
+    },
+    {
+     "id": "social-housing.n-violence",
+     "when": {
+      "any": [
+       {
+        "field": "priority_need",
+        "op": "eq",
+        "value": "homeless as a result of domestic abuse"
+       },
+       {
+        "field": "support_needs",
+        "op": "contains",
+        "value": "at risk of or has experienced domestic abuse"
+       }
+      ]
+     },
+     "when_text": "The priority need is homelessness as a result of domestic abuse, or the record lists domestic abuse.",
+     "text": "The allocation guidance gives, as an example of urgent need, people who are homeless and need urgent rehousing as a result of violence or threats of violence (allocation guidance, paragraph 4.13); check whether the scheme gives additional preference.",
+     "citations": [
+      "allocation-guidance"
+     ],
+     "confidence": "Certain"
+    }
+   ]
+  },
+  {
+   "id": "prs-offer",
+   "title": "Private rented sector offer",
+   "summary": "An offer of a private tenancy, arranged by the council to bring the main housing duty to an end. The duty ends whether the household accepts or refuses it, if the conditions are met.",
+   "ends_main_duty": true,
+   "applies_when": {
+    "always": true
+   },
+   "applies_when_text": "Every household in TA; the officer confirms the duty owed.",
+   "reasons": [
+    {
+     "id": "prs-offer.r1",
+     "text": "The main housing duty ends if the applicant accepts or refuses a private rented sector offer that meets the conditions in s.193(7AA) to (7AC) (Code 15.38(b)).",
+     "citations": [
+      "ha1996-s193",
+      "code-ch15"
+     ],
+     "confidence": "Certain"
+    },
+    {
+     "id": "prs-offer.r2",
+     "text": "From 1 May 2026, for a tenancy that is not social housing, the offer is of an assured tenancy from a private landlord with no minimum fixed term, and the reapplication duty in s.195A no longer applies (Renters' Rights Act 2025, s.25, commenced for those tenancies by SI 2026/421).",
+     "citations": [
+      "ha1996-s193",
+      "rra2025-s25",
+      "si-2026-421"
+     ],
+     "confidence": "Certain"
+    },
+    {
+     "id": "prs-offer.r3",
+     "text": "For a social housing tenancy from a private registered provider, the law remains as it was until the reforms start for those tenancies, expected in October 2027 (Code overview, paras 6 and 7): an assured shorthold tenancy of at least 12 months, and the s.195A duty if the household reapplies within 2 years.",
+     "citations": [
+      "code-overview",
+      "ha1996-s193"
+     ],
+     "confidence": "Likely"
+    }
+   ],
+   "officer_checks": [
+    {
+     "id": "prs-offer.c1",
+     "text": "Check which rules apply before the offer is made: for a tenancy that is not social housing, from 1 May 2026, an assured tenancy with no minimum fixed term and no s.195A duty; for a social housing tenancy from a private registered provider, the earlier rules until the reforms start for it (Code overview, paras 6 and 7); and the s.195A duty still applies where the household accepted a private rented sector offer before 1 May 2026 (SI 2026/421, regulation 10).",
+     "citations": [
+      "ha1996-s193",
+      "rra2025-s25",
+      "si-2026-421",
+      "code-overview"
+     ],
+     "confidence": "Likely"
+    },
+    {
+     "id": "prs-offer.c2",
+     "text": "Check each condition in article 3 of the 2012 Order before approving the offer: reasonable physical condition; electrical equipment that meets Schedule 1 to the Electrical Equipment (Safety) Regulations 2016; reasonable fire safety and carbon monoxide precautions; a landlord who is a fit and proper person; any licence a house in multiple occupation, or additional licensing, needs; a valid energy performance certificate; a current gas safety record; and an adequate written tenancy agreement given to the council (Code 17.16 to 17.17).",
+     "citations": [
+      "si-2012-2601",
+      "code-ch17"
+     ],
+     "confidence": "Certain"
+    },
+    {
+     "id": "prs-offer.c3",
+     "text": "Check the location against article 2 of the 2012 Order: the distance from the district, disruption to work, caring responsibilities or education, access to the medical facilities and support the household uses, and access to local services, amenities and transport.",
+     "citations": [
+      "si-2012-2601"
+     ],
+     "confidence": "Certain"
+    },
+    {
+     "id": "prs-offer.c4",
+     "text": "Check that the rent is affordable for the household, taking account of its income and essential living costs (Code 17.47 and 17.48).",
+     "citations": [
+      "code-ch17"
+     ],
+     "confidence": "Certain"
+    },
+    {
+     "id": "prs-offer.c5",
+     "text": "Check that the household is told in writing of the possible consequences of refusal or acceptance and of the right to ask for a review of suitability (s.193(7AB); Code 15.38(b)), and, where the s.195A duty applies to the offer, of the duties owed if it reapplies within 2 years.",
+     "citations": [
+      "ha1996-s193",
+      "code-ch15"
+     ],
+     "confidence": "Likely"
+    },
+    {
+     "id": "prs-offer.c6",
+     "text": "Check that the council is satisfied the accommodation is suitable, and that the household has no obligations on its current accommodation it cannot end in time, before it approves the offer (s.193(7F) and (8)).",
+     "citations": [
+      "ha1996-s193"
+     ],
+     "confidence": "Certain"
+    }
+   ],
+   "notes": [
+    {
+     "id": "prs-offer.n-children",
+     "when": {
+      "field": "children",
+      "op": "gt",
+      "value": 0
+     },
+     "when_text": "The household has children.",
+     "text": "Check the disruption a move would cause to the children's education (2012 Order, article 2(b)).",
+     "citations": [
+      "si-2012-2601"
+     ],
+     "confidence": "Certain"
+    },
+    {
+     "id": "prs-offer.n-support",
+     "when": {
+      "field": "support_needs",
+      "op": "nonempty"
+     },
+     "when_text": "The record lists one or more support needs.",
+     "text": "Check that the support and medical services the household relies on stay within reach (2012 Order, article 2(c)).",
+     "citations": [
+      "si-2012-2601"
+     ],
+     "confidence": "Certain"
+    }
+   ]
+  },
+  {
+   "id": "supported-housing",
+   "title": "Supported housing",
+   "summary": "Accommodation provided alongside support, supervision or care, for a household whose support needs it would meet.",
+   "ends_main_duty": null,
+   "applies_when": {
+    "field": "support_needs",
+    "op": "nonempty"
+   },
+   "applies_when_text": "The record lists one or more support needs.",
+   "reasons": [
+    {
+     "id": "supported-housing.r1",
+     "text": "Supported housing is provided alongside support, supervision or care, and the groups it serves include people with mental ill health, people fleeing domestic abuse, people recovering from drug or alcohol dependence and young people with a support need (national statement of expectations).",
+     "citations": [
+      "nse-supported-housing"
+     ],
+     "confidence": "Certain"
+    },
+    {
+     "id": "supported-housing.r2",
+     "text": "The national statement of expectations is not statutory: it sets out what the government expects and suggests good practice.",
+     "citations": [
+      "nse-supported-housing"
+     ],
+     "confidence": "Certain"
+    }
+   ],
+   "officer_checks": [
+    {
+     "id": "supported-housing.c1",
+     "text": "Check that the household's support and housing needs have been assessed before any referral (national statement of expectations), and ask whether it wants supported housing.",
+     "citations": [
+      "nse-supported-housing"
+     ],
+     "confidence": "Likely"
+    },
+    {
+     "id": "supported-housing.c2",
+     "text": "Check how a move would affect the main housing duty: it ends if the household accepts a suitable Part 6 offer (s.193(6)(c)) or voluntarily ceases to occupy the accommodation provided as its only or principal home (s.193(6)(d)); explain this to the household before any move.",
+     "citations": [
+      "ha1996-s193",
+      "code-ch15"
+     ],
+     "confidence": "Likely"
+    },
+    {
+     "id": "supported-housing.c3",
+     "text": "Check that any accommodation used to meet a duty is suitable for the household (Code chapter 17).",
+     "citations": [
+      "code-ch17"
+     ],
+     "confidence": "Certain"
+    }
+   ],
+   "notes": [
+    {
+     "id": "supported-housing.n-family",
+     "when": {
+      "any": [
+       {
+        "field": "children",
+        "op": "gt",
+        "value": 0
+       },
+       {
+        "field": "priority_need",
+        "op": "eq",
+        "value": "household includes a pregnant woman"
+       }
+      ]
+     },
+     "when_text": "The household has children or includes a pregnant woman.",
+     "text": "The code says supported accommodation with shared facilities will not normally be suitable for longer-term placements of families with pregnant women or children (Code 2.52); check whether self-contained supported housing could be found.",
+     "citations": [
+      "code-ch2"
+     ],
+     "confidence": "Certain"
+    },
+    {
+     "id": "supported-housing.n-abuse",
+     "when": {
+      "field": "support_needs",
+      "op": "contains",
+      "value": "at risk of or has experienced domestic abuse"
+     },
+     "when_text": "The record lists domestic abuse.",
+     "text": "Check safety and location risks with the household before any referral, using the code's chapter on domestic abuse (Code chapter 21).",
+     "citations": [
+      "code-ch21"
+     ],
+     "confidence": "Likely"
+    },
+    {
+     "id": "supported-housing.n-young",
+     "when": {
+      "any": [
+       {
+        "field": "support_needs",
+        "op": "contains",
+        "value": "young person needing support"
+       },
+       {
+        "field": "priority_need",
+        "op": "in",
+        "value": [
+         "applicant aged 16 or 17",
+         "care leaver aged 18 to 20"
+        ]
+       }
+      ]
+     },
+     "when_text": "The record lists a young person needing support, or a young applicant or care leaver.",
+     "text": "Use the code's chapter on young people, including those with care experience (Code chapter 22).",
+     "citations": [
+      "code-ch22"
+     ],
+     "confidence": "Likely"
+    }
+   ]
+  }
+ ],
+ "suitability_checks": [
+  {
+   "id": "bnb-family-limit",
+   "when": {
+    "all": [
+     {
+      "field": "accommodation_type",
+      "op": "eq",
+      "value": "bed_and_breakfast"
+     },
+     {
+      "any": [
+       {
+        "field": "children",
+        "op": "gt",
+        "value": 0
+       },
+       {
+        "field": "priority_need",
+        "op": "eq",
+        "value": "household includes a pregnant woman"
+       }
+      ]
+     }
+    ]
+   },
+   "when_text": "In B&B, with children or a pregnant woman in the household.",
+   "text": "B&B counts as suitable for an applicant with family commitments only where no other accommodation is available, and then for no more than 6 weeks in total, and the code says to use it only as a last resort (2003 Order, articles 3 and 4; Code 17.35 and 17.38). The record does not show how long the household has been in B&B: check the time used against the 6 weeks limit, and secure other suitable accommodation before it is reached.",
+   "citations": [
+    "si-2003-3326",
+    "code-ch17"
+   ],
+   "confidence": "Certain"
+  },
+  {
+   "id": "bnb-young-applicant",
+   "when": {
+    "all": [
+     {
+      "field": "accommodation_type",
+      "op": "eq",
+      "value": "bed_and_breakfast"
+     },
+     {
+      "field": "priority_need",
+      "op": "eq",
+      "value": "applicant aged 16 or 17"
+     }
+    ]
+   },
+   "when_text": "In B&B, with an applicant aged 16 or 17.",
+   "text": "The code rules out B&B for 16 and 17 year old applicants, even on an emergency basis (Code 17.42). The record holds the priority need at acceptance, not the applicant's age now: check the age, and check that other suitable accommodation is secured.",
+   "citations": [
+    "code-ch17"
+   ],
+   "confidence": "Certain"
+  },
+  {
+   "id": "bnb-care-leaver",
+   "when": {
+    "all": [
+     {
+      "field": "accommodation_type",
+      "op": "eq",
+      "value": "bed_and_breakfast"
+     },
+     {
+      "field": "priority_need",
+      "op": "eq",
+      "value": "care leaver aged 18 to 20"
+     }
+    ]
+   },
+   "when_text": "In B&B, with a care leaver as the applicant.",
+   "text": "The code says B&B, hotels and nightly-let accommodation with shared facilities are not suitable for care leavers aged under 25, and should be used only in exceptional circumstances and for short periods, with close management and oversight throughout where their use cannot be avoided (Code 22.48): check that other suitable accommodation is secured.",
+   "citations": [
+    "code-ch22"
+   ],
+   "confidence": "Certain"
+  },
+  {
+   "id": "young-applicant-children-services",
+   "when": {
+    "field": "priority_need",
+    "op": "eq",
+    "value": "applicant aged 16 or 17"
+   },
+   "when_text": "The applicant was aged 16 or 17 at acceptance.",
+   "text": "If the applicant is still 16 or 17, check that children's services are involved: section 20 of the Children Act 1989 places a duty on children's services authorities to accommodate a child in need, and in almost all circumstances a homeless 16 or 17 year old would be a child in need; the joint statutory guidance on 16 and 17 year olds sets out the duties (Code 22.6 and 22.7).",
+   "citations": [
+    "code-ch22",
+    "guidance-16-17"
+   ],
+   "confidence": "Certain"
+  },
+  {
+   "id": "out-of-district",
+   "when": {
+    "field": "placed_in_another_district",
+    "op": "eq",
+    "value": true
+   },
+   "when_text": "Placed outside the council's own district.",
+   "text": "So far as reasonably practicable, the council secures accommodation in its own district (s.208(1)). For a placement outside it, check that written notice went to the council where the accommodation is within 14 days of the accommodation being made available (s.208(2) to (4)), and check the location against article 2 of the 2012 Order and Code chapter 17.",
+   "citations": [
+    "ha1996-s208",
+    "si-2012-2601",
+    "code-ch17"
+   ],
+   "confidence": "Certain"
+  },
+  {
+   "id": "space-and-affordability",
+   "when": {
+    "always": true
+   },
+   "when_text": "Every household.",
+   "text": "Check space and arrangement against the household's size, including the room and space standards in Part 10 of the Housing Act 1985, and check that the accommodation is free of Category 1 hazards and affordable (Code 17.4, 17.27 to 17.29, 17.47 and 17.48).",
+   "citations": [
+    "code-ch17"
+   ],
+   "confidence": "Certain"
+  },
+  {
+   "id": "medical-needs",
+   "when": {
+    "field": "support_needs",
+    "op": "contains",
+    "value": "physical ill health and disability"
+   },
+   "when_text": "The record lists physical ill health and disability.",
+   "text": "Consider carefully the suitability of accommodation for a household with medical or physical needs (Code 17.5).",
+   "citations": [
+    "code-ch17"
+   ],
+   "confidence": "Certain"
+  }
+ ],
+ "citations": {
+  "ha1996-s166a": {
+   "publisher": "The National Archives (legislation.gov.uk)",
+   "title": "Housing Act 1996, section 166A",
+   "date": "revised text up to date with changes in force on or before 9 October 2026",
+   "parts_used": "166A(3): reasonable preference",
+   "read_on": "21 October 2026"
+  },
+  "ha1996-s189": {
+   "publisher": "The National Archives (legislation.gov.uk)",
+   "title": "Housing Act 1996, section 189",
+   "date": "revised text up to date with changes in force on or before 16 October 2026",
+   "parts_used": "189(1): priority need",
+   "read_on": "21 October 2026"
+  },
+  "ha1996-s193": {
+   "publisher": "The National Archives (legislation.gov.uk)",
+   "title": "Housing Act 1996, section 193",
+   "date": "revised text up to date with changes in force on or before 20 October 2026, showing the Renters' Rights Act 2025 amendments from 1 May 2026",
+   "parts_used": "193(2), (6), (7), (7A), (7AA) to (7AC), (7F) and (8)",
+   "read_on": "21 October 2026, re-read 22 October 2026"
+  },
+  "ha1996-s208": {
+   "publisher": "The National Archives (legislation.gov.uk)",
+   "title": "Housing Act 1996, section 208",
+   "date": "revised text up to date with changes in force on or before 9 October 2026",
+   "parts_used": "208(1) to (4): placements outside the district and the notice",
+   "read_on": "21 October 2026"
+  },
+  "si-2003-3326": {
+   "publisher": "The National Archives (legislation.gov.uk)",
+   "title": "The Homelessness (Suitability of Accommodation) (England) Order 2003 (SI 2003/3326)",
+   "date": "made 19 December 2003, in force 1 April 2004; text as made",
+   "parts_used": "articles 2 to 4: B&B and applicants with family commitments",
+   "read_on": "21 October 2026"
+  },
+  "si-2012-2601": {
+   "publisher": "The National Archives (legislation.gov.uk)",
+   "title": "The Homelessness (Suitability of Accommodation) (England) Order 2012 (SI 2012/2601)",
+   "date": "made 11 October 2012, in force 9 November 2012; revised text (see also SI 2022/521 and SI 2024/371)",
+   "parts_used": "article 2 (location) and article 3 (private rented accommodation)",
+   "read_on": "21 October 2026"
+  },
+  "si-2026-421": {
+   "publisher": "The National Archives (legislation.gov.uk)",
+   "title": "The Renters' Rights Act 2025 (Commencement No. 2 and Transitional and Saving Provisions) Regulations 2026 (SI 2026/421), regulations 2 and 10",
+   "date": "2026; regulation 2 commences the Act's tenancy reforms on 1 May 2026 for assured tenancies that are not social housing assured tenancies, and regulation 10 keeps s.195A for applicants who accepted a private rented sector offer before 1 May 2026",
+   "parts_used": "regulations 2 and 10",
+   "read_on": "21 October 2026"
+  },
+  "code-overview": {
+   "publisher": "Ministry of Housing, Communities and Local Government (GOV.UK)",
+   "title": "Homelessness code of guidance for local authorities: overview of the homelessness legislation",
+   "date": "updated 1 May 2026",
+   "parts_used": "paragraphs 6 to 8 and 21",
+   "read_on": "21 October 2026"
+  },
+  "code-ch2": {
+   "publisher": "Ministry of Housing, Communities and Local Government (GOV.UK)",
+   "title": "Homelessness code of guidance for local authorities, chapter 2: homelessness strategies and reviews",
+   "date": "full code as at 30 September 2026",
+   "parts_used": "paragraphs 2.46 and 2.52",
+   "read_on": "21 October 2026"
+  },
+  "code-ch15": {
+   "publisher": "Ministry of Housing, Communities and Local Government (GOV.UK)",
+   "title": "Homelessness code of guidance for local authorities, chapter 15: accommodation duties and powers",
+   "date": "updated 30 September 2026",
+   "parts_used": "paragraphs 15.38 and 15.39",
+   "read_on": "21 October 2026"
+  },
+  "code-ch17": {
+   "publisher": "Ministry of Housing, Communities and Local Government (GOV.UK)",
+   "title": "Homelessness code of guidance for local authorities, chapter 17: suitability of accommodation",
+   "date": "as read on 21 October 2026 (the code was last updated 15 October 2026)",
+   "parts_used": "paragraphs 17.2 to 17.5, 17.15 to 17.17, 17.27 to 17.29, 17.34 to 17.42, 17.47 and 17.48",
+   "read_on": "21 October 2026"
+  },
+  "code-ch21": {
+   "publisher": "Ministry of Housing, Communities and Local Government (GOV.UK)",
+   "title": "Homelessness code of guidance for local authorities, chapter 21: domestic abuse",
+   "date": "amended 15 October 2026",
+   "parts_used": "chapter title only; not read in full",
+   "read_on": "21 October 2026"
+  },
+  "code-ch22": {
+   "publisher": "Ministry of Housing, Communities and Local Government (GOV.UK)",
+   "title": "Homelessness code of guidance for local authorities, chapter 22: young people, including those with care experience",
+   "date": "updated 30 September 2026",
+   "parts_used": "paragraphs 22.6, 22.7 and 22.48",
+   "read_on": "22 October 2026: paragraphs 22.6, 22.7 and 22.48 checked against GOV.UK"
+  },
+  "allocation-guidance": {
+   "publisher": "Ministry of Housing, Communities and Local Government",
+   "title": "Allocation of accommodation: guidance for local housing authorities in England",
+   "date": "version 1.7, 1 April 2026 (cover dated November 2025)",
+   "parts_used": "paragraphs 3.2, 3.30, 4.4, 4.7 and 4.13",
+   "read_on": "21 October 2026"
+  },
+  "nse-supported-housing": {
+   "publisher": "Ministry of Housing, Communities and Local Government, with the Department for Work and Pensions (GOV.UK)",
+   "title": "Supported housing: national statement of expectations",
+   "date": "published 20 October 2020",
+   "parts_used": "who supported housing is for; status (not a statutory requirement)",
+   "read_on": "21 October 2026"
+  },
+  "rra2025-s25": {
+   "publisher": "The National Archives (legislation.gov.uk)",
+   "title": "Renters' Rights Act 2025, section 25",
+   "date": "in force 1 May 2026 for specified purposes (SI 2026/421, regulation 2(a), with regulation 10), as shown on the page",
+   "parts_used": "25(2)(c) and (d): s.193(7AB) and (7AC) amended; 25(4): s.195A omitted",
+   "read_on": "21 October 2026"
+  },
+  "guidance-16-17": {
+   "publisher": "Ministry of Housing, Communities and Local Government (GOV.UK)",
+   "title": "Provision of accommodation for 16 and 17 year olds who may be homeless and/or require accommodation",
+   "date": "statutory guidance, first published 1 April 2010, last updated 30 April 2018",
+   "parts_used": "named in Code 22.6; not read in full",
+   "read_on": "21 October 2026"
+  }
+ }
+}

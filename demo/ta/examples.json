@@ -1,0 +1,28 @@
+[
+ {
+  "id": "typical-london",
+  "label": "A London borough",
+  "group": "London",
+  "year": "2024-25",
+  "households_about": 3100.0,
+  "gross_per_household": 20300.0,
+  "net_per_household": 9500.0,
+  "ratio_to_peer_median": 1.0,
+  "peers_lower": 11,
+  "peers_shown": 23,
+  "share_of_peers_lower_gross": 0.48
+ },
+ {
+  "id": "typical-rest",
+  "label": "A metropolitan council",
+  "group": "Rest of England",
+  "year": "2024-25",
+  "households_about": 620.0,
+  "gross_per_household": 16800.0,
+  "net_per_household": 10100.0,
+  "ratio_to_peer_median": 1.0,
+  "peers_lower": 80,
+  "peers_shown": 159,
+  "share_of_peers_lower_gross": 0.5
+ }
+]

@@ -1,0 +1,39 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+.env
+
+# Local deny list (names that must never appear); never commit it
+config/deny_list.txt
+
+# Private working copies with council names in comparison lists
+reports/private/
+data/private/
+
+# Generated from fd-core by scripts/export_fdcore_patterns.py for the JavaScript port of the
+# move-on screen. It lists the words the screen blocks, so it stays out of git (no policy change).
+tamarket/spec/fdcore_patterns.json
+
+# Built publish folder (scripts/build_app.py); it holds a generated copy of the fd-core patterns
+app/dist/
+
+# The hosted build (scripts/build_app.py --target hosted): the Netlify folder and the drafting
+# function's bundle, both with a generated copy of the fd-core patterns
+app/dist-hosted/
+supabase/functions/draft-plan/_bundle/
+# Supabase CLI state and local secrets; secrets are set in the dashboard, never in the repo
+supabase/.temp/
+supabase/.branches/
+supabase/.env
+supabase/functions/.env
+evals/logs/
+
+# Monitoring: candidates and refusals stay out of git (a refused candidate may hold a name)
+monitor/inbox/
+monitor/refused.jsonl
+monitor/refusals.jsonl
+
+# Public copy: council-by-council comparisons stay out of git (PUBLIC.md)
+data/processed/picture_councils_*.csv

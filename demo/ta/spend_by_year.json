@@ -1,0 +1,32 @@
+[
+ {
+  "year": "2023-24",
+  "bed_and_breakfast": 726174000.0,
+  "nightly_paid_self_contained": 601409000.0,
+  "hostels": 84509000.0,
+  "private_sector_leased": 522447000.0,
+  "la_ha_stock": 83716000.0,
+  "other": 108920000.0,
+  "first_release": false
+ },
+ {
+  "year": "2024-25",
+  "bed_and_breakfast": 711665377.0,
+  "nightly_paid_self_contained": 1070834360.0,
+  "hostels": 101833025.0,
+  "private_sector_leased": 562751690.0,
+  "la_ha_stock": 124118546.0,
+  "other": 81303640.0,
+  "first_release": false
+ },
+ {
+  "year": "2025-26",
+  "bed_and_breakfast": 822641057.0,
+  "nightly_paid_self_contained": 955143680.0,
+  "hostels": 109462447.0,
+  "private_sector_leased": 609155420.0,
+  "la_ha_stock": 129724014.0,
+  "other": 102538852.0,
+  "first_release": true
+ }
+]

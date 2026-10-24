@@ -1,0 +1,79 @@
+{
+ "schema": "monitor-sources/1",
+ "about": "Lawful public sources Move forward's monitoring layer reads (fdcore.monitor). Each is read through its public pages as a person would read them: no sign-in, no VPN, no hidden identity, no household data. Terms were read on 22 October 2026. Standing grades are the source's reliability on the six-by-six scale (A to F); the officer who accepts an item sets its grade.",
+ "read_on": "2026-10-22",
+ "sources": [
+  {
+   "id": "mhclg-stats",
+   "name": "Homelessness statistics",
+   "publisher": "Ministry of Housing, Communities and Local Government",
+   "url": "https://www.gov.uk/government/collections/homelessness-statistics",
+   "hosts": ["assets.publishing.service.gov.uk"],
+   "language": "en",
+   "kind": "statistics",
+   "terms_url": "https://www.gov.uk/help/terms-conditions",
+   "terms_note": "Open Government Licence v3.0, except where otherwise stated (GOV.UK terms and conditions)",
+   "reliability": "A",
+   "cadence_days": 7,
+   "in_use": true,
+   "watch_for": "Quarterly statutory homelessness releases, their announcements and revisions; the live tables."
+  },
+  {
+   "id": "code-of-guidance",
+   "name": "Homelessness code of guidance for local authorities",
+   "publisher": "Ministry of Housing, Communities and Local Government",
+   "url": "https://www.gov.uk/guidance/homelessness-code-of-guidance-for-local-authorities",
+   "language": "en",
+   "kind": "guidance",
+   "terms_url": "https://www.gov.uk/help/terms-conditions",
+   "terms_note": "Open Government Licence v3.0, except where otherwise stated (GOV.UK terms and conditions)",
+   "reliability": "A",
+   "cadence_days": 7,
+   "in_use": true,
+   "watch_for": "A chapter's Updated date and its change notes (the page's history, or GOV.UK's content API for the same path), above all chapters 15, 17 and 22, which the planner's checks cite."
+  },
+  {
+   "id": "legislation",
+   "name": "legislation.gov.uk",
+   "publisher": "The National Archives",
+   "url": "https://www.legislation.gov.uk/",
+   "language": "en",
+   "kind": "legislation",
+   "terms_url": "https://www.legislation.gov.uk/help",
+   "terms_note": "Open Government Licence v3.0 except where otherwise stated; Crown and database right",
+   "reliability": "A",
+   "cadence_days": 14,
+   "in_use": true,
+   "watch_for": "New statutory instruments and amendments touching Part 7 of the Housing Act 1996, the suitability orders (SI 2003/3326, SI 2012/2601), the review regulations (SI 2018/223) and commencement of the Renters' Rights Act 2025."
+  },
+  {
+   "id": "lgsco",
+   "name": "Ombudsman decisions: homelessness",
+   "publisher": "Local Government and Social Care Ombudsman",
+   "url": "https://www.lgo.org.uk/decisions/housing/homelessness",
+   "language": "en",
+   "kind": "ombudsman",
+   "terms_url": "https://www.lgo.org.uk/copyright",
+   "terms_note": "Not the Open Government Licence. The Ombudsman's copyright page: \"You may re-use the information on this website free of charge in any format\"; \"you must acknowledge the source and our copyright in cases where you supply the information to others\"; \"you must reproduce the information accurately, without amendment\"; \"you must not use the information in a misleading way\"; \"you must not use the information for the principal purpose of advertising or promoting a particular product or service\". So these items stay off anything used to promote a service. Summaries here are this planner's own words; the passage quoted is unchanged. Copyright: Local Government and Social Care Ombudsman.",
+   "reliability": "A",
+   "cadence_days": 7,
+   "in_use": true,
+   "watch_for": "Published decisions on temporary accommodation: suitability, bed and breakfast past six weeks, delays in reviews, out-of-area placements. Summaries never name the council or anyone else."
+  },
+  {
+   "id": "mhclg-guidance",
+   "name": "Housing and homelessness news and guidance",
+   "publisher": "Ministry of Housing, Communities and Local Government",
+   "url": "https://www.gov.uk/government/organisations/ministry-of-housing-communities-local-government",
+   "hosts": ["www.gov.uk"],
+   "language": "en",
+   "kind": "guidance",
+   "terms_url": "https://www.gov.uk/help/terms-conditions",
+   "terms_note": "Open Government Licence v3.0, except where otherwise stated (GOV.UK terms and conditions)",
+   "reliability": "A",
+   "cadence_days": 7,
+   "in_use": true,
+   "watch_for": "New duties and their guidance (for example the temporary accommodation notification duty), funding for councils' homelessness work, and the private rented sector's new rules."
+  }
+ ]
+}

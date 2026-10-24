@@ -1,0 +1,55 @@
+{
+ "schema": "references/1",
+ "note": "Official pages for the planner's References panel: legislation and statutory guidance from the publishers' own sites, with the date each was read. The citations in pathways.json name the same sources by publisher, title and date.",
+ "references": [
+  {
+   "id": "code-overview",
+   "title": "Homelessness code of guidance for local authorities: overview of the homelessness legislation",
+   "by": "Ministry of Housing, Communities and Local Government (GOV.UK), updated 1 May 2026",
+   "url": "https://www.gov.uk/guidance/homelessness-code-of-guidance-for-local-authorities/overview-of-the-homelessness-legislation",
+   "read": "2026-10-21"
+  },
+  {
+   "id": "code-ch15",
+   "title": "Homelessness code of guidance for local authorities, chapter 15: accommodation duties and powers",
+   "by": "Ministry of Housing, Communities and Local Government (GOV.UK), updated 30 September 2026",
+   "url": "https://www.gov.uk/guidance/homelessness-code-of-guidance-for-local-authorities/chapter-15-accommodation-duties-and-powers",
+   "read": "2026-10-21"
+  },
+  {
+   "id": "code-ch17",
+   "title": "Homelessness code of guidance for local authorities, chapter 17: suitability of accommodation",
+   "by": "Ministry of Housing, Communities and Local Government (GOV.UK), updated 15 October 2026",
+   "url": "https://www.gov.uk/guidance/homelessness-code-of-guidance-for-local-authorities/chapter-17-suitability-of-accommodation",
+   "read": "2026-10-21"
+  },
+  {
+   "id": "ha1996-s193",
+   "title": "Housing Act 1996, section 193: duty to persons with priority need who are not homeless intentionally",
+   "by": "The National Archives (legislation.gov.uk)",
+   "url": "https://www.legislation.gov.uk/ukpga/1996/52/section/193",
+   "read": "2026-10-21"
+  },
+  {
+   "id": "ha1996-s208",
+   "title": "Housing Act 1996, section 208: discharge of functions: out-of-area placements",
+   "by": "The National Archives (legislation.gov.uk)",
+   "url": "https://www.legislation.gov.uk/ukpga/1996/52/section/208",
+   "read": "2026-10-21"
+  },
+  {
+   "id": "allocation-guidance",
+   "title": "Allocation of accommodation: guidance for local housing authorities in England",
+   "by": "Ministry of Housing, Communities and Local Government, version 1.7, 1 April 2026 (cover dated November 2025)",
+   "url": "https://assets.publishing.service.gov.uk/media/691c4d2421ef5aaa6543eec3/allocation_of_accommodation_guidance_1_April_2026.pdf",
+   "read": "2026-10-21"
+  },
+  {
+   "id": "live-tables",
+   "title": "Tables on homelessness",
+   "by": "Ministry of Housing, Communities and Local Government",
+   "url": "https://www.gov.uk/government/statistical-data-sets/live-tables-on-homelessness",
+   "read": "2026-10-21"
+  }
+ ]
+}

@@ -1,0 +1,406 @@
+{
+  "attribution": "Contains public sector information licensed under the Open Government Licence v3.0. Licence: https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
+  "national": {
+    "2024-25": {
+      "year": "2024-25",
+      "avg_households_england": 125235.0,
+      "avg_households_london": 70153.75,
+      "te_accom_england_row": 2652506638.4700003,
+      "nce_accom_england_row": 1263750319.4099998,
+      "te_admin_england_row": 171351150.0,
+      "te_ta_total_england_row": 2823857788.4700003,
+      "gross_per_household_england": 21180.234267337408,
+      "net_per_household_england": 10091.03141621751,
+      "by_type": {
+        "bed_and_breakfast": {
+          "avg_households": 17280.0,
+          "te": 711665377.03,
+          "nce": 370865417.03,
+          "gross_per_household": 41184.338948495366,
+          "net_per_household": 21462.11904108796
+        },
+        "nightly_paid_self_contained": {
+          "avg_households": 39771.25,
+          "te": 1070834360.0,
+          "nce": 601875430.0,
+          "gross_per_household": 26924.835402457804,
+          "net_per_household": 15133.430053116259
+        },
+        "hostels": {
+          "avg_households": 6733.75,
+          "te": 101833025.43,
+          "nce": 36509300.3,
+          "gross_per_household": 15122.780832374236,
+          "net_per_household": 5421.837802116205
+        },
+        "private_sector_leased": {
+          "avg_households": 26612.5,
+          "te": 562751690.0,
+          "nce": 213000020.0,
+          "gross_per_household": 21146.14147487083,
+          "net_per_household": 8003.758384217943
+        },
+        "la_ha_stock": {
+          "avg_households": 29441.25,
+          "te": 124118545.55,
+          "nce": -1904368.38,
+          "gross_per_household": 4215.804204984503,
+          "net_per_household": -64.6836795312699
+        },
+        "other": {
+          "avg_households": 5396.25,
+          "te": 81303640.46,
+          "nce": 43404520.46,
+          "gross_per_household": 15066.6926958536,
+          "net_per_household": 8043.45989529766
+        }
+      }
+    },
+    "2025-26": {
+      "year": "2025-26",
+      "avg_households_england": 133603.75,
+      "avg_households_london": 75138.75,
+      "te_accom_england_row": 2728665469.26,
+      "nce_accom_england_row": 1312165112.87,
+      "te_admin_england_row": 205963702.01,
+      "te_ta_total_england_row": 2934629171.2700005,
+      "gross_per_household_england": 20423.569467623478,
+      "net_per_household_england": 9821.319482948644,
+      "by_type": {
+        "bed_and_breakfast": {
+          "avg_households": 13676.25,
+          "te": 822641057.27,
+          "nce": 467484893.74,
+          "gross_per_household": 60151.068989671876,
+          "net_per_household": 34182.24248167444
+        },
+        "nightly_paid_self_contained": {
+          "avg_households": 49746.25,
+          "te": 955143679.5,
+          "nce": 494263661.71,
+          "gross_per_household": 19200.315189587156,
+          "net_per_household": 9935.69689594693
+        },
+        "hostels": {
+          "avg_households": 6840.0,
+          "te": 109462447.2,
+          "nce": 26193960.040000003,
+          "gross_per_household": 16003.281754385966,
+          "net_per_household": 3829.5263216374274
+        },
+        "private_sector_leased": {
+          "avg_households": 26341.25,
+          "te": 609155419.71,
+          "nce": 271191655.06,
+          "gross_per_household": 23125.531996773123,
+          "net_per_household": 10295.32216808238
+        },
+        "la_ha_stock": {
+          "avg_households": 32455.0,
+          "te": 129724013.7,
+          "nce": -4837394.51,
+          "gross_per_household": 3997.042480357418,
+          "net_per_household": -149.04928393159759
+        },
+        "other": {
+          "avg_households": 4541.25,
+          "te": 102538851.88,
+          "nce": 57868336.83,
+          "gross_per_household": 22579.43338948527,
+          "net_per_household": 12742.821212221304
+        }
+      }
+    }
+  },
+  "spend_by_year": [
+    {
+      "year": "2023-24",
+      "bed_and_breakfast": 726174000.0,
+      "nightly_paid_self_contained": 601409000.0,
+      "hostels": 84509000.0,
+      "private_sector_leased": 522447000.0,
+      "la_ha_stock": 83716000.0,
+      "other": 108920000.0,
+      "accommodation_80_85": 2127175000.0,
+      "admin_86": 154711000.0,
+      "ta_80_86": 2281886000.0,
+      "net_accommodation_80_85": 943977000.0
+    },
+    {
+      "year": "2024-25",
+      "bed_and_breakfast": 711665377.03,
+      "nightly_paid_self_contained": 1070834360.0,
+      "hostels": 101833025.43,
+      "private_sector_leased": 562751690.0,
+      "la_ha_stock": 124118545.55,
+      "other": 81303640.46,
+      "accommodation_80_85": 2652506638.4700003,
+      "admin_86": 171351150.0,
+      "ta_80_86": 2823857788.4700003,
+      "net_accommodation_80_85": 1263750319.4099998
+    },
+    {
+      "year": "2025-26",
+      "bed_and_breakfast": 822641057.27,
+      "nightly_paid_self_contained": 955143679.5,
+      "hostels": 109462447.2,
+      "private_sector_leased": 609155419.71,
+      "la_ha_stock": 129724013.7,
+      "other": 102538851.88,
+      "accommodation_80_85": 2728665469.26,
+      "admin_86": 205963702.01,
+      "ta_80_86": 2934629171.2700005,
+      "net_accommodation_80_85": 1312165112.87
+    }
+  ],
+  "households_change_2025Q1_2026Q1": {
+    "england": {
+      "total_2025-Q1": 130890.0,
+      "total_2026-Q1": 135580.0,
+      "total_change": 4690.0,
+      "with_children_2025-Q1": 82990.0,
+      "with_children_2026-Q1": 86460.0,
+      "with_children_change": 3470.0,
+      "bed_and_breakfast_2025-Q1": 15750.0,
+      "bed_and_breakfast_2026-Q1": 12220.0,
+      "bed_and_breakfast_change": -3530.0,
+      "nightly_paid_self_contained_2025-Q1": 46620.0,
+      "nightly_paid_self_contained_2026-Q1": 51390.0,
+      "nightly_paid_self_contained_change": 4770.0,
+      "hostels_2025-Q1": 6930.0,
+      "hostels_2026-Q1": 6810.0,
+      "hostels_change": -120.0,
+      "private_sector_leased_2025-Q1": 25900.0,
+      "private_sector_leased_2026-Q1": 26690.0,
+      "private_sector_leased_change": 790.0,
+      "la_ha_stock_2025-Q1": 30650.0,
+      "la_ha_stock_2026-Q1": 33890.0,
+      "la_ha_stock_change": 3240.0,
+      "other_2025-Q1": 5030.0,
+      "other_2026-Q1": 4580.0,
+      "other_change": -450.0,
+      "total_pct_change": 0.035831614332645735
+    },
+    "london": {
+      "total_2025-Q1": 73090.0,
+      "total_2026-Q1": 76020.0,
+      "total_change": 2930.0,
+      "with_children_2025-Q1": 48260.0,
+      "with_children_2026-Q1": 51190.0,
+      "with_children_change": 2930.0,
+      "bed_and_breakfast_2025-Q1": 5290.0,
+      "bed_and_breakfast_2026-Q1": 3570.0,
+      "bed_and_breakfast_change": -1720.0,
+      "nightly_paid_self_contained_2025-Q1": 32110.0,
+      "nightly_paid_self_contained_2026-Q1": 36260.0,
+      "nightly_paid_self_contained_change": 4150.0,
+      "hostels_2025-Q1": 2760.0,
+      "hostels_2026-Q1": 2780.0,
+      "hostels_change": 20.0,
+      "private_sector_leased_2025-Q1": 18120.0,
+      "private_sector_leased_2026-Q1": 17430.0,
+      "private_sector_leased_change": -690.0,
+      "la_ha_stock_2025-Q1": 12840.0,
+      "la_ha_stock_2026-Q1": 14220.0,
+      "la_ha_stock_change": 1380.0,
+      "other_2025-Q1": 1960.0,
+      "other_2026-Q1": 1740.0,
+      "other_change": -220.0,
+      "total_pct_change": 0.040087563278150225
+    }
+  },
+  "groups": {
+    "2024-25": {
+      "England": {
+        "inclusive": {
+          "group": "England",
+          "councils": 296,
+          "councils_compared": 184,
+          "spend_te_accom_all": 2645839760.0,
+          "spend_te_accom_compared": 2052933860.0,
+          "avg_households_compared": 101586.0,
+          "gross_per_household": 20208.82660996594,
+          "net_per_household": 9527.971177130707,
+          "share_households_np_bb": 0.44632749591479143,
+          "share_spend_np_bb": 0.6722559683437634
+        },
+        "strict": {
+          "group": "England",
+          "councils": 296,
+          "councils_compared": 167,
+          "spend_te_accom_all": 2645839760.0,
+          "spend_te_accom_compared": 1583272180.0,
+          "avg_households_compared": 80817.625,
+          "gross_per_household": 19590.67938460206,
+          "net_per_household": 9083.297981102512,
+          "share_households_np_bb": 0.45090257230399927,
+          "share_spend_np_bb": 0.6832165016630305
+        }
+      },
+      "London": {
+        "inclusive": {
+          "group": "London",
+          "councils": 33,
+          "councils_compared": 24,
+          "spend_te_accom_all": 1645047330.0,
+          "spend_te_accom_compared": 1177597800.0,
+          "avg_households_compared": 54039.0,
+          "gross_per_household": 21791.62826847277,
+          "net_per_household": 9635.853550213735,
+          "share_households_np_bb": 0.4773381261681378,
+          "share_spend_np_bb": 0.7066822135707115
+        },
+        "strict": {
+          "group": "London",
+          "councils": 33,
+          "councils_compared": 16,
+          "spend_te_accom_all": 1645047330.0,
+          "spend_te_accom_compared": 748297350.0,
+          "avg_households_compared": 35613.25,
+          "gross_per_household": 21011.768091932077,
+          "net_per_household": 8794.732578464476,
+          "share_households_np_bb": 0.5049805900893628,
+          "share_spend_np_bb": 0.7615465028708174
+        }
+      },
+      "Rest of England": {
+        "inclusive": {
+          "group": "Rest of England",
+          "councils": 263,
+          "councils_compared": 160,
+          "spend_te_accom_all": 1000792430.0,
+          "spend_te_accom_compared": 875336060.0,
+          "avg_households_compared": 47547.0,
+          "gross_per_household": 18409.911456032976,
+          "net_per_household": 9405.358697709635,
+          "share_households_np_bb": 0.4110827181525648,
+          "share_spend_np_bb": 0.6259420182004155
+        },
+        "strict": {
+          "group": "Rest of England",
+          "councils": 263,
+          "councils_compared": 151,
+          "spend_te_accom_all": 1000792430.0,
+          "spend_te_accom_compared": 834974830.0,
+          "avg_households_compared": 45204.375,
+          "gross_per_household": 18471.106613021417,
+          "net_per_household": 9310.637742475148,
+          "share_households_np_bb": 0.408298422442518,
+          "share_spend_np_bb": 0.6130178199503331
+        }
+      }
+    },
+    "2025-26": {
+      "England": {
+        "inclusive": {
+          "group": "England",
+          "councils": 296,
+          "councils_compared": 180,
+          "spend_te_accom_all": 2684557240.0,
+          "spend_te_accom_compared": 2256506280.0,
+          "avg_households_compared": 108794.875,
+          "gross_per_household": 20740.924423140335,
+          "net_per_household": 10010.992153812393,
+          "share_households_np_bb": 0.47607481510503136,
+          "share_spend_np_bb": 0.6476672513404217
+        },
+        "strict": {
+          "group": "England",
+          "councils": 296,
+          "councils_compared": 158,
+          "spend_te_accom_all": 2684557240.0,
+          "spend_te_accom_compared": 1723574810.0,
+          "avg_households_compared": 84894.75,
+          "gross_per_household": 20302.489965516124,
+          "net_per_household": 9720.972380506451,
+          "share_households_np_bb": 0.46020660877144937,
+          "share_spend_np_bb": 0.6232668601138351
+        }
+      },
+      "London": {
+        "inclusive": {
+          "group": "London",
+          "councils": 33,
+          "councils_compared": 26,
+          "spend_te_accom_all": 1699855050.0,
+          "spend_te_accom_compared": 1391460530.0,
+          "avg_households_compared": 61494.375,
+          "gross_per_household": 22627.444054842414,
+          "net_per_household": 10813.886798589301,
+          "share_households_np_bb": 0.5283410067994024,
+          "share_spend_np_bb": 0.6408735575129825
+        },
+        "strict": {
+          "group": "London",
+          "councils": 33,
+          "councils_compared": 19,
+          "spend_te_accom_all": 1699855050.0,
+          "spend_te_accom_compared": 982671410.0,
+          "avg_households_compared": 44071.75,
+          "gross_per_household": 22297.081690652176,
+          "net_per_household": 10014.444400324472,
+          "share_households_np_bb": 0.5322854209329105,
+          "share_spend_np_bb": 0.6211125649824288
+        }
+      },
+      "Rest of England": {
+        "inclusive": {
+          "group": "Rest of England",
+          "councils": 263,
+          "councils_compared": 154,
+          "spend_te_accom_all": 984702190.0,
+          "spend_te_accom_compared": 865045750.0,
+          "avg_households_compared": 47300.5,
+          "gross_per_household": 18288.300335091597,
+          "net_per_household": 8967.165886195706,
+          "share_households_np_bb": 0.4081246498451391,
+          "share_spend_np_bb": 0.6585951783475036
+        },
+        "strict": {
+          "group": "Rest of England",
+          "councils": 263,
+          "councils_compared": 139,
+          "spend_te_accom_all": 984702190.0,
+          "spend_te_accom_compared": 740903400.0,
+          "avg_households_compared": 40823.0,
+          "gross_per_household": 18149.16591137349,
+          "net_per_household": 9404.145457217744,
+          "share_households_np_bb": 0.38239166646253336,
+          "share_spend_np_bb": 0.6261241344013269
+        }
+      }
+    }
+  },
+  "comparison_counts": {
+    "2024-25": {
+      "leads": 8,
+      "largest_line_few_households": 2,
+      "largest_line_under_50": 4,
+      "near_threshold": 2,
+      "checks": 14
+    },
+    "2025-26": {
+      "leads": 6,
+      "largest_line_few_households": 3,
+      "largest_line_under_50": 4,
+      "near_threshold": 1,
+      "checks": 12
+    }
+  },
+  "left_out_for_a_data_check_england": {
+    "2024-25": 8,
+    "2025-26": 5
+  },
+  "england_row_against_returns": {
+    "2024-25": {
+      "england_minus_returns_80_85": 1586878.470000267,
+      "england_minus_returns_80_86": 1586878.470000267,
+      "housing_authorities_without_return": 1
+    },
+    "2025-26": {
+      "england_minus_returns_80_85": 35988419.26000023,
+      "england_minus_returns_80_86": 42925891.27000046,
+      "housing_authorities_without_return": 25
+    }
+  }
+}

@@ -1,0 +1,3277 @@
+/* The Move forward planner page. scripts/build_app.py copies this file into app/index.html after
+ * the spec ports it uses (TaScreen, TaScenario, TaPrompt, from tamarket/spec/) and the template
+ * (TaTemplate, app/src/template.js).
+ *
+ * Synthetic records only: every household is made up from a seed, none is a real person.
+ * Plans are suggestions for an officer to approve, never decisions. Each plan, drafted by
+ * Claude, built from the template or edited by a person, passes the screen in
+ * tamarket/spec/screen_rules.json before it is shown or saved.
+ *
+ * When an editor returns or rejects a plan, what they wrote goes to the next draft as a reviewer
+ * note (screen_rules.json, review): Claude is given it apart from the record, and the next
+ * version must answer it before it can be submitted or approved.
+ */
+(() => {
+'use strict';
+
+/* ============================================================== helpers */
+const $ = (sel, el = document) => el.querySelector(sel);
+function build(tag, props, kids) {
+  const el = document.createElement(tag);
+  if (props) for (const k in props) {
+    const v = props[k];
+    if (v === null || v === undefined || v === false) continue;
+    if (k === 'class') el.className = v;
+    else if (k === 'text') el.textContent = v;
+    else if (k.startsWith('on') && typeof v === 'function') el.addEventListener(k.slice(2), v);
+    else if (k === 'dataset') Object.assign(el.dataset, v);
+    else if (k === 'value' || k === 'checked' || k === 'disabled' || k === 'hidden' || k === 'selected') el[k] = v;
+    else el.setAttribute(k, v === true ? '' : String(v));
+  }
+  for (const kid of kids.flat(Infinity)) {
+    if (kid === null || kid === undefined || kid === false) continue;
+    el.append(kid instanceof Node ? kid : document.createTextNode(String(kid)));
+  }
+  return el;
+}
+const h = (tag, props, ...kids) => build(tag, props, kids);
+// Element.append writes null as the text "null", so a card's children go through add(), which
+// skips null, undefined and false as h() does.
+const add = (el, ...kids) => { for (const k of kids.flat(Infinity)) if (k !== null && k !== undefined && k !== false) el.append(k); return el; };
+// Element.replaceChildren, like append, writes null as the text "null" and an array as its
+// string, so views are redrawn through swap(), which skips null, undefined and false and
+// flattens arrays, as h() and add() do.
+const swap = (el, ...kids) => { el.replaceChildren(); return add(el, ...kids); };
+const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+function stamp(iso) {
+  const d = new Date(iso);
+  if (!iso || isNaN(d)) return '';
+  return `${d.getDate()} ${MON[d.getMonth()]} ${d.getFullYear()}, ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+// The clock. A copy with no shared store (the public demo site, the offline copy) runs on the
+// caseload's demo day (meta.demo_day, tamarket/synthetic.py), at the real time of day, so its
+// clocks show what the caseload was drawn to show whenever it is opened. A deployment, the live
+// artifact and the browser tests' stores use the real date.
+const demoDay = () => (typeof S !== 'undefined' && S.store && S.store.kind === 'memory' && S.data && S.data.meta && S.data.meta.demo_day) || null;
+const clockNow = () => {
+  const d = new Date(), dd = demoDay();
+  if (!dd) return d;
+  const [y, m, day] = dd.split('-').map(Number);
+  d.setFullYear(y, m - 1, day);
+  return d;
+};
+const nowIso = () => clockNow().toISOString();
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const clone = (o) => (o === undefined ? undefined : JSON.parse(JSON.stringify(o)));
+const plural = (n, one, many) => (n === 1 ? one : many);
+const cap = (t) => (t ? String(t).charAt(0).toUpperCase() + String(t).slice(1) : t);
+const intGB = (v) => Number(v).toLocaleString('en-GB');
+function gbp(v) {
+  if (typeof v !== 'number' || !Number.isFinite(v)) return 'n/a';
+  // Whole pounds as they are; anything with pence to two places, so £789.30 never shows as £789.3.
+  const pence = !Number.isInteger(v);
+  return (v < 0 ? '-' : '') + '£' + Math.abs(v).toLocaleString('en-GB', { minimumFractionDigits: pence ? 2 : 0, maximumFractionDigits: 2 });
+}
+const local = {
+  get(k, d) { try { const v = localStorage.getItem('mop.' + k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem('mop.' + k, JSON.stringify(v)); } catch { /* storage unavailable */ } },
+};
+const hex = (buf) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
+async function sha256Bytes(bytes) { try { return hex(await crypto.subtle.digest('SHA-256', bytes)); } catch { return ''; } }
+const sha256 = (text) => sha256Bytes(new TextEncoder().encode(text));
+// Canonical JSON: keys sorted at every level, so a hash does not depend on key order.
+function canon(v) {
+  if (Array.isArray(v)) return '[' + v.map(canon).join(',') + ']';
+  if (v && typeof v === 'object') return '{' + Object.keys(v).sort().map((k) => JSON.stringify(k) + ':' + canon(v[k])).join(',') + '}';
+  return JSON.stringify(v);
+}
+const csvCell = (x) => { const t = String(x === null || x === undefined ? '' : x); return /[",\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+const mdCell = (x) => String(x === null || x === undefined ? '' : x).replace(/\|/g, '/').replace(/\n/g, ' ');
+
+/* ============================================================== labels */
+const LICENCE_URL = 'https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/';
+const OGL_LINE = 'Contains public sector information licensed under the Open Government Licence v3.0.';
+const STATUS_LINE = 'Suggestions for an officer to approve, never decisions.';
+const TYPE_LABEL = {
+  bed_and_breakfast: 'Bed and breakfast', nightly_paid_self_contained: 'Nightly-paid, self-contained', hostels: 'Hostel',
+  private_sector_leased: 'Private sector leased', la_ha_stock: 'Council or housing association stock', other: 'Other',
+};
+const CHECK_LABEL = {
+  'bnb-family-limit': 'Family in B&B', 'bnb-young-applicant': '16 or 17 in B&B', 'bnb-care-leaver': 'Care leaver in B&B',
+  'young-applicant-children-services': 'Children’s services', 'out-of-district': 'Out of district',
+  'space-and-affordability': 'Space and affordability', 'medical-needs': 'Medical needs',
+};
+const FLAG_CHECKS = ['bnb-family-limit', 'bnb-young-applicant', 'bnb-care-leaver', 'young-applicant-children-services', 'out-of-district', 'medical-needs'];
+const PATHWAY_SHORT = { 'social-housing': 'Social housing', 'prs-offer': 'PRS offer', 'supported-housing': 'Supported housing' };
+const STATE_LABEL = { new: 'No plan', drafting: 'Drafting', submitted: 'Awaiting approval', returned: 'Returned', approved: 'Approved', rejected: 'Plan rejected' };
+const STAGES = [
+  ['none', 'Not started'], ['referral', 'Referral or application made'], ['offer', 'Offer made'],
+  ['accepted', 'Offer accepted'], ['moved', 'Moved on'], ['fell_through', 'Fell through'],
+];
+const STAGE_LABEL = Object.fromEntries(STAGES);
+const OWNERS = ['officer', 'household', 'support worker', 'landlord or agent', 'another team'];
+const CONFIDENCE = ['Certain', 'Likely', 'Guessing'];
+const CITE_SHORT = { 'code-overview': 'Code overview', 'allocation-guidance': 'Allocation guidance', 'nse-supported-housing': 'Supported housing statement',
+  'rra2025-s25': 'RRA 2025 s.25', 'guidance-16-17': '16 and 17 guidance' };
+const ACTION_LABEL = {
+  draft_created: 'had a plan drafted by Claude', draft_failed_screen: 'had a draft stopped by the screen',
+  plan_saved: 'saved a plan', plan_submitted: 'submitted the plan for approval', plan_approved: 'approved the plan',
+  plan_returned: 'returned the plan', plan_rejected: 'rejected the plan', reopened: 'reopened the plan',
+  check_updated: 'updated a check', progress_updated: 'recorded progress', assigned: 'took the household',
+  unassigned: 'released the household', workflow_changed: 'changed the approval setting',
+  pack_exported: 'exported the plan pack', audit_exported: 'exported the audit log',
+  lesson_proposed: 'kept a note as a lesson', lesson_not_kept: 'had a note refused as a lesson',
+  lesson_approved: 'approved a lesson', lesson_rejected: 'did not keep or retired a lesson',
+  task_added: 'added a follow-up', task_done: 'finished a follow-up', task_reopened: 'reopened a follow-up', task_changed: 'changed a follow-up',
+  notice_recorded: 'recorded a notice', notice_changed: 'changed a notice record', consent_recorded: 'recorded the answer on a child’s notices', notice_info_recorded: 'recorded the information about a child’s body', notice_corrected: 'corrected a sent notice (owner)',
+  review_requested: 'recorded a review request', review_decided: 'recorded a review decision', review_extended: 'recorded a longer review period',
+  review_changed: 'changed a review', handover_exported: 'saved a handover',
+  monitor_accepted: 'accepted a monitoring item', monitor_rejected: 'rejected a monitoring item', monitor_changed: 'changed the decision on a monitoring item',
+};
+const REJECT_REASONS = [
+  ['changed', 'The record or the circumstances have changed'],
+  ['duplicate', 'Another plan covers this household'],
+  ['not_needed', 'No move-forward plan is needed now'],
+  ['other', 'Other (see the note)'],
+];
+
+/* ============================================================== state */
+const S = {
+  data: null, moveon: null, records: [], byId: new Map(), manifest: null, integrity: { bad: [], missing: [] },
+  spec: {}, screenSpec: null, screenReady: false,
+  store: null, storeState: 'connecting', readOnly: false,
+  me: { id: null, name: '', avatar: '', isOwner: false, canEdit: false, canData: null, role: '' },
+  caps: { db: undefined, user: undefined, sample: undefined, downloads: undefined },
+  // Shared records: files (status pointer, assignee), checks, moves. Author-bound records sit
+  // under each person's own path (versions/<id>/v, decisions/<id>/d, audit/<id>/e), which the
+  // store's rules let only that person write, so the path, not a field, says who wrote them.
+  files: new Map(), checks: new Map(), moves: new Map(), tasks: new Map(), notices: new Map(), reviews: new Map(),
+  // Monitoring (phase 7): the items (data/monitor.json, spec/monitor_sources.json) and the shared
+  // decisions on them (monitor/<item id>). An item decided on stays in the list it was decided in
+  // (monKeep) until the list changes, so the keyboard can stay with it.
+  mon: null, monBad: false, monitor: new Map(), monForm: {}, monEdit: null, monScope: 'waiting', monKeep: new Set(),
+  // The element to move the keyboard to after the next redraw (an id), once an action has replaced
+  // the button that was pressed.
+  focusNext: null,
+  noticeUi: {}, reviewUi: {}, handoverSince: {},
+  members: new Set(), memberIds: new Set(), byMember: { versions: new Map(), decisions: new Map(), audit: new Map() },
+  versions: new Map(), decisions: new Map(), audit: [], verified: new Map(), auditCapped: false,
+  // Lessons (fd-core's memory core): kept notes from returned plans, the decisions on them, and
+  // whether each one's text still matches the SHA-256 saved with it.
+  lessons: new Map(), lessonDecisions: new Map(), lessonVerified: new Map(), memRules: null,
+  demoAs: local.get('demo_as', 'demo-officer'),
+  workflow: { four_eyes: true }, people: {},
+  view: 'caseload', fileId: null, preset: 'all', lastRow: null, shell: null,
+  filter: Object.assign({ state: 'all', type: 'all', check: 'all', sort: 'weeks', mine: false, q: '' }, local.get('filter', {})),
+  ui: {},
+  scenario: local.get('scenario', {}),
+  auditQuery: '',
+};
+const uiFor = (hid) => (S.ui[hid] = S.ui[hid] || { mode: 'view', working: null, problems: null, busy: false, ctl: null, confirm: null, msg: '', note: '', reason: '', privateChecked: false, progress: null });
+
+/* ============================================================== capabilities */
+const hasClaude = typeof window.claude === 'object' && window.claude !== null && typeof window.claude.use === 'function';
+async function useCap(name) {
+  if (!hasClaude) return null;
+  try { return await window.claude.use(name); } catch { return null; }
+}
+
+/* ============================================================== stores
+   One small interface, two backends: the artifact's shared database, or a store held in this
+   tab when the view has none. The hosted version swaps in a Supabase backend with the same
+   calls (app/README.md). */
+async function withRetry(fn) {
+  try { return await fn(); } catch (e) {
+    if (e && e.code === 'unavailable') { await sleep(300 + Math.random() * 600); return fn(); }
+    throw e;
+  }
+}
+function dbStore(db) {
+  const coll = (c) => db.collection(c);
+  return {
+    kind: 'db',
+    watch(c, opts, cb, onErr) {
+      let q = coll(c);
+      if (opts && opts.orderBy) q = q.orderBy(opts.orderBy, opts.dir || 'asc');
+      if (opts && opts.limit) q = q.limit(opts.limit);
+      return q.onSnapshot((snap) => cb(snap.docs.filter((d) => d.exists).map((d) => ({ id: d.id, data: d.data() }))), (e) => onErr && onErr(e));
+    },
+    watchDoc(c, id, cb, onErr) { return coll(c).doc(id).onSnapshot((d) => cb(d.exists ? d.data() : null), (e) => onErr && onErr(e)); },
+    async get(c, id) { const d = await withRetry(() => coll(c).doc(id).get()); return d.exists ? d.data() : null; },
+    async where(c, field, value) {
+      const snap = await withRetry(() => coll(c).where(field, '==', value).limit(1000).get());
+      return snap.docs.filter((d) => d.exists).map((d) => Object.assign({ id: d.id }, d.data()));
+    },
+    set(c, id, data) { return withRetry(() => coll(c).doc(id).set(data)); },
+    update(c, id, data) { return withRetry(() => coll(c).doc(id).update(data)); },
+    async add(c, data) { const ref = coll(c).doc(); await withRetry(() => ref.set(data)); return ref.id; },
+  };
+}
+function memoryStore() {
+  const colls = new Map(), subs = new Map();
+  const bucket = (c) => { if (!colls.has(c)) colls.set(c, new Map()); return colls.get(c); };
+  const emit = (c) => { for (const fn of subs.get(c) || []) fn(); };
+  const merge = (a, b) => {
+    const out = Object.assign({}, a);
+    for (const k in b) out[k] = b[k] && typeof b[k] === 'object' && !Array.isArray(b[k]) && a[k] && typeof a[k] === 'object' && !Array.isArray(a[k]) ? merge(a[k], b[k]) : b[k];
+    return out;
+  };
+  const listen = (c, fn) => { if (!subs.has(c)) subs.set(c, new Set()); subs.get(c).add(fn); setTimeout(fn, 0); return () => subs.get(c).delete(fn); };
+  return {
+    kind: 'memory',
+    watch(c, opts, cb) {
+      return listen(c, () => {
+        let rows = [...bucket(c).entries()].map(([id, data]) => ({ id, data: clone(data) }));
+        if (opts && opts.orderBy) { const k = opts.orderBy, dir = opts.dir === 'desc' ? -1 : 1; rows.sort((x, y) => (x.data[k] > y.data[k] ? 1 : x.data[k] < y.data[k] ? -1 : 0) * dir); }
+        else rows.sort((x, y) => (x.id < y.id ? -1 : x.id > y.id ? 1 : 0));
+        if (opts && opts.limit) rows = rows.slice(0, opts.limit);
+        cb(rows);
+      });
+    },
+    watchDoc(c, id, cb) { return listen(c, () => { const v = bucket(c).get(id); cb(v ? clone(v) : null); }); },
+    async get(c, id) { const v = bucket(c).get(id); return v ? clone(v) : null; },
+    async where(c, field, value) { return [...bucket(c).entries()].filter(([, d]) => d[field] === value).map(([id, d]) => Object.assign({ id }, clone(d))); },
+    async set(c, id, data) { bucket(c).set(id, clone(data)); emit(c); },
+    async update(c, id, data) { const cur = bucket(c).get(id); if (!cur) throw { code: 'invalid_argument', message: 'no such document' }; bucket(c).set(id, merge(cur, clone(data))); emit(c); },
+    async add(c, data) { const id = 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); bucket(c).set(id, clone(data)); emit(c); return id; },
+  };
+}
+async function upsert(c, id, data) {
+  const cur = await S.store.get(c, id);
+  if (cur) return S.store.update(c, id, data);
+  return S.store.set(c, id, data);
+}
+
+// The hosted build (hosted/README.md) loads app/src/hosted.js first, which sets window.TaHosted.
+const HOSTED = typeof window.TaHosted === 'object' && window.TaHosted !== null;
+/* ============================================================== permissions */
+// Demo mode has no real sign-in, so the sign-in screen offers synthetic people, one for each
+// role the hosted version has (viewer, contributor, editor, owner), and two editors so that
+// four-eyes on plans and on lessons can be tried in one tab. The choice is kept in this browser.
+const DEMO_PEOPLE = {
+  'demo-officer': { name: 'Housing officer (demo)', role: 'Contributor', edit: false, initials: 'HO',
+    does: 'Takes households, drafts plans, works the checks and follow-ups, records progress and sends plans for approval.' },
+  'demo-reviewer': { name: 'Reviewing officer (demo)', role: 'Editor', edit: true, initials: 'RO',
+    does: 'Everything an officer does, and approves, returns or rejects plans; with four-eyes on, never approves a plan they saved.' },
+  'demo-lead': { name: 'Team leader (demo)', role: 'Editor', edit: true, initials: 'TL',
+    does: 'A second editor, so that four-eyes can be tried in one tab.' },
+  'demo-finance': { name: 'Finance officer (demo)', role: 'Viewer', edit: false, view: true, initials: 'FO',
+    does: 'Reads the caseload, plans, costs and the audit log, and exports plan packs and the log; changes nothing.' },
+  'demo-owner': { name: 'Service manager (demo)', role: 'Owner', edit: true, owner: true, initials: 'SM',
+    does: 'Everything an editor does. In a deployment the owner also decides who has access, and at which role.' },
+};
+const isDemo = () => !!S.store && S.store.kind === 'memory';
+const demoMe = () => (DEMO_PEOPLE[S.demoAs] ? S.demoAs : 'demo-officer');
+const canWrite = () => !!S.store && S.storeState !== 'connecting' && !S.readOnly && S.screenReady &&
+  (S.store.kind === 'memory' ? !DEMO_PEOPLE[demoMe()].view : (!!S.me.id && S.me.canData !== false));
+const canApprove = () => canWrite() && (isDemo() ? DEMO_PEOPLE[demoMe()].edit : (S.me.isOwner || S.me.canEdit));
+const myId = () => (isDemo() ? demoMe() : S.me.id);
+function writeFailed(e, what) {
+  const code = e && e.code;
+  if (code === 'invalid_argument' && S.store && S.store.kind === 'db') {
+    S.readOnly = true;
+    banner('ro', 'warn', 'Your access lets you read this planner but not change it. Ask the owner for Contributor access to work on plans.');
+  } else if (code === 'quota_exceeded') {
+    banner('quota', 'bad', 'The planner’s store is full, so nothing new can be saved. Tell the owner.');
+  } else {
+    banner('write', 'bad', `Could not save ${what}. Try again in a moment.`);
+  }
+  refresh();
+}
+
+/* ============================================================== people */
+const pending = new Set();
+async function resolvePeople(ids) {
+  const want = [...new Set(ids.filter((i) => i && i !== 'local-viewer' && !DEMO_PEOPLE[i] && !S.people[i] && !pending.has(i)))];
+  if (!want.length || !S.caps.user) return;
+  want.forEach((i) => pending.add(i));
+  try {
+    const ps = await S.caps.user.profiles(want);
+    let changed = false;
+    for (const id of want) if (ps && ps[id]) { S.people[id] = { name: ps[id].name || '', avatar: ps[id].avatarUrl || '' }; changed = true; }
+    if (changed) refresh();
+  } catch { /* names are a convenience */ } finally { want.forEach((i) => pending.delete(i)); }
+}
+// "Housing officer (demo)" becomes "Housing officer (demo, you)", not "(demo) (you)".
+const withYou = (name) => (/\)$/.test(name) ? name.replace(/\)$/, ', you)') : name + ' (you)');
+function person(id) {
+  if (!id) return { name: 'Nobody', avatar: '' };
+  if (DEMO_PEOPLE[id]) return { name: id === myId() ? withYou(DEMO_PEOPLE[id].name) : DEMO_PEOPLE[id].name, avatar: '' };
+  if (id === 'local-viewer' || id === S.me.id) return { name: S.me.name ? withYou(S.me.name) : 'You', avatar: S.me.avatar };
+  const p = S.people[id];
+  return { name: (p && p.name) || 'Someone', avatar: (p && p.avatar) || '' };
+}
+// Names for exported files: never "You", and never the platform's id when a name does not resolve.
+function nameFor(id) {
+  if (!id) return 'nobody';
+  if (DEMO_PEOPLE[id]) return DEMO_PEOPLE[id].name;
+  if (id === 'local-viewer') return 'the demo viewer';
+  if (id === S.me.id && S.me.name) return S.me.name;
+  const p = S.people[id];
+  return (p && p.name) || 'a member of staff (name not available)';
+}
+function whoLine(id, extra) {
+  const p = person(id);
+  return h('span', { class: 'who-line' }, p.avatar ? h('img', { src: p.avatar, alt: '' }) : null, h('span', null, p.name), extra || null);
+}
+
+/* ============================================================== banners */
+const banners = new Map();
+function banner(key, kind, text) { if (text) banners.set(key, { kind, text }); else banners.delete(key); drawBanners(); }
+function drawBanners() { swap($('#banners'), ...[...banners.values()].map((b) => h('div', { class: 'banner ' + (b.kind || '') }, b.text))); }
+
+/* ============================================================== data
+   Every file the page loads is checked against the build's manifest (SHA-256 of its bytes).
+   If a file does not match, plans cannot be drafted or saved in this view. */
+async function fetchBytes(p) {
+  const r = await fetch(p, { cache: 'no-cache' });
+  if (!r.ok) throw new Error(`${p}: HTTP ${r.status}`);
+  return new Uint8Array(await r.arrayBuffer());
+}
+const FILES = ['data/caseload.json', 'spec/screen_rules.json', 'spec/moveon.schema.json', 'spec/pathways.json', 'spec/fdcore_patterns.json', 'spec/moveon_prompt.md', 'spec/scenario_cases.json', 'spec/memory_rules.json', 'spec/references.json', 'spec/clocks.json', 'data/monitor.json', 'spec/monitor_sources.json'];
+// The monitoring files stand apart from the plan screen: if one does not match the manifest, the
+// Monitor page says so and shows nothing, and plans are drafted and saved as before.
+const MON_FILES = new Set(['data/monitor.json', 'spec/monitor_sources.json']);
+async function loadStatic() {
+  const dec = new TextDecoder('utf-8');
+  S.manifest = JSON.parse(dec.decode(await fetchBytes('data/manifest.json')));
+  const got = await Promise.allSettled(FILES.map(fetchBytes));
+  const text = {};
+  for (let i = 0; i < FILES.length; i++) {
+    const p = FILES[i];
+    if (got[i].status !== 'fulfilled') { S.integrity.missing.push(p); continue; }
+    const bytes = got[i].value, want = S.manifest.files && S.manifest.files[p];
+    const have = await sha256Bytes(bytes);
+    if (!want || (have && have !== want)) {
+      if (MON_FILES.has(p)) { S.monBad = true; continue; }
+      S.integrity.bad.push(p);
+    }
+    text[p] = dec.decode(bytes);
+  }
+  if (!text['data/caseload.json']) throw new Error('the caseload did not load');
+  const json = (p) => { try { return text[p] ? JSON.parse(text[p]) : null; } catch { S.integrity.bad.push(p); return null; } };
+  S.data = json('data/caseload.json');
+  S.moveon = S.data.meta.moveon;
+  S.records = S.data.records.filter((r) => r && r.synthetic === true && /^SYN-\d{4}$/.test(r.id));
+  S.byId = new Map(S.records.map((r) => [r.id, r]));
+  S.spec = { rules: json('spec/screen_rules.json'), schema: json('spec/moveon.schema.json'), pathways: json('spec/pathways.json'),
+    fdcore: json('spec/fdcore_patterns.json'), prompt: text['spec/moveon_prompt.md'] || null, scenario: json('spec/scenario_cases.json'),
+    refs: (json('spec/references.json') || {}).references || [], clocks: json('spec/clocks.json') };
+  // Monitoring (phase 7): the items (a list) and the register's names, terms and grades.
+  const monItemsFile = json('data/monitor.json'), monSrc = json('spec/monitor_sources.json');
+  S.mon = Array.isArray(monItemsFile) && monSrc && Array.isArray(monSrc.sources)
+    ? { items: monItemsFile, sources: Object.fromEntries(monSrc.sources.map((s) => [s.id, s])), grades: monSrc.grades, read_on: monSrc.read_on } : null;
+  const sp = S.spec;
+  S.screenSpec = sp.rules && sp.schema && sp.pathways && sp.fdcore ? { rules: sp.rules, schema: sp.schema, pathways: sp.pathways, fdcore: sp.fdcore } : null;
+  S.screenReady = !!S.screenSpec && !S.integrity.bad.length && !S.integrity.missing.some((p) => p.startsWith('spec/') && p !== 'spec/scenario_cases.json' && p !== 'spec/moveon_prompt.md' && p !== 'spec/memory_rules.json' && p !== 'spec/clocks.json' && !MON_FILES.has(p));
+  // Lessons need the memory core's rules; the hosted build has no lessons yet.
+  const mr = json('spec/memory_rules.json');
+  if (mr && window.FdMemory && !(typeof window.TaHosted === 'object' && window.TaHosted !== null)) { try { S.memRules = window.FdMemory.compileMemoryRules(mr); } catch (e) { console.warn('memory rules did not compile', e); } }
+  if (S.integrity.bad.length) banner('integrity', 'bad', `These files do not match the build’s manifest: ${S.integrity.bad.join(', ')}. Plans cannot be drafted or saved in this view until the page is published again.`);
+  else if (!S.screenReady) banner('integrity', 'bad', 'The plan screen’s files did not load, so plans cannot be drafted or saved in this view.');
+}
+const pathwayTitle = (pid) => (S.moveon.pathways[pid] ? S.moveon.pathways[pid].title : pid === 'general' ? 'General' : pid);
+const textOf = (id) => S.moveon.texts[id] || { text: id, citations: [], confidence: 'Guessing' };
+
+/* ============================================================== screen */
+// review: the reviewer notes the plan answers (a version's own, or the notes it is drafted against).
+function screen(plan, rec, review) {
+  if (!S.screenReady || !rec) return { passed: false, problems: [{ path: '', rule: 'not_ready', detail: '' }], plan };
+  try { return TaScreen.screenPlan(plan, rec, S.screenSpec, { deny: [], review: review || [] }); }
+  catch (e) { console.warn('screen failed', e); return { passed: false, problems: [{ path: '', rule: 'not_ready', detail: '' }], plan }; }
+}
+// Free text a person types (a note on a return, a rejection or progress): plain characters,
+// the fd-core screen and the name check, and for a note that goes to Claude (toClaude) the
+// instruction check of the reviewer notes. Returns {text, problems}, text normalised.
+function screenNote(raw, toClaude) {
+  const rules = S.spec.rules;
+  if (!S.screenReady) return { text: raw, problems: [{ path: 'note', rule: 'not_ready', detail: '' }] };
+  const text = TaScreen.normaliseText(String(raw || ''), rules).trim();
+  const problems = [];
+  if (text.includes(rules.style.em_dash)) problems.push({ path: 'note', rule: 'style', detail: 'em dash' });
+  const rx = new RegExp(rules.style.disallowed_chars.pattern, 'g');
+  for (const m of text.split(rules.style.em_dash).join('').matchAll(rx)) problems.push({ path: 'note', rule: 'style', detail: 'character outside ASCII: ' + m[0] });
+  for (const f of TaScreen.fdcoreScan(text, S.spec.fdcore, [])) problems.push({ path: 'note', rule: rules.fdcore.rule_prefix + f.kind, detail: f.text });
+  for (const n of TaScreen.personFindings(text, rules, '')) problems.push({ path: 'note', rule: 'person', detail: n });
+  if (toClaude && rules.review) {
+    const rx = new RegExp(rules.review.instruction.pattern, rules.review.instruction.flags || '');
+    if (text.split('\n').some((line) => rx.test(line))) problems.push({ path: 'note', rule: 'instruction', detail: '' });
+  }
+  return { text, problems };
+}
+const RULE_TEXT = {
+  style: 'Use plain characters and no em dashes', schema: 'Does not match the plan format', record: 'Not for this synthetic record',
+  pathway: 'Suggests a pathway not listed for this record', decision: 'States a decision; write a suggestion or a check instead',
+  person: 'May name a person, place or provider; describe people by their role', figure: 'Uses a figure that is not in the record',
+  reply: 'The reply is not one JSON object', not_ready: 'The screen rules have not loaded',
+  review: 'Does not answer the reviewer’s notes as it should', instruction: 'Reads as an instruction to Claude; say what should change in the plan',
+  length: 'The note is too long',
+  'fdcore:company name': 'Looks like the name of a firm', 'fdcore:email address': 'Looks like an email address',
+  'fdcore:UK postcode': 'Looks like a postcode', 'fdcore:phone number': 'Looks like a phone number',
+  'fdcore:deny-list name': 'A name on the deny list', 'fdcore:accusing language': 'Judging or accusing wording',
+};
+// What matched is shown only where it cannot itself be a name or personal data.
+const SAFE_DETAIL = new Set(['style', 'schema', 'record', 'pathway', 'decision', 'figure', 'review', 'length', 'fdcore:accusing language']);
+const problemText = (p) => (RULE_TEXT[p.rule] || p.rule) + (p.path ? ` (${p.path})` : '') + (SAFE_DETAIL.has(p.rule) && p.detail ? `: ${p.detail}` : '');
+// role="alert" only when a message is new. A store refresh redraws the page, and an alert drawn
+// again would be announced again; a message gone for a whole redraw is new when it comes back.
+let DRAW_GEN = 0;
+const SAID = new Map();
+function freshAlert(key, text) {
+  const was = SAID.get(key);
+  SAID.set(key, { text, gen: DRAW_GEN });
+  return !(was && was.text === text && was.gen >= DRAW_GEN - 1);
+}
+const alertAttrs = (key, text) => (freshAlert(key, text) ? { role: 'alert' } : {});
+// A message under a form that say() sets in place: the live region is drawn empty, so a message
+// set later is announced as it arrives, and one already announced is drawn again outside it.
+function msgBox(key, ui) {
+  if (!ui.msg) SAID.delete(key);
+  const fresh = !!ui.msg && freshAlert(key, ui.msg);
+  const shown = h('span', { class: 'task-msg' }, ui.msg && !fresh ? ui.msg : '');
+  const live = h('span', { class: 'task-msg', role: 'alert' }, fresh ? ui.msg : '');
+  const box = h('span', { class: 'msg-box' }, shown, live);
+  box.say = (text) => { ui.msg = text; SAID.set(key, { text, gen: DRAW_GEN }); shown.textContent = ''; live.textContent = text; };
+  return box;
+}
+const problemsBox = (title, problems) => h('div', Object.assign({ class: 'problems' }, alertAttrs('problems:' + title, problems.map(problemText).join('|'))), h('b', null, title),
+  h('ul', null, problems.slice(0, 20).map((p) => h('li', null, problemText(p)))), problems.length > 20 ? h('span', null, `and ${problems.length - 20} more`) : null);
+
+/* ============================================================== workflow
+   State is worked out from the records, never stored as "approved": a plan is approved only by
+   a decision under an editor's own path, for a version whose text still matches the
+   fingerprint saved with it, and saved by someone else. An approval by the person who saved
+   the version counts only while the shared four-eyes setting is off and the decision says so. */
+const OWN = { versions: 'v', decisions: 'd', audit: 'e' };
+const ownColl = (kind, uid) => `${kind}/${uid}/${OWN[kind]}`;
+const byTime = (k) => (a, b) => (a[k] < b[k] ? -1 : a[k] > b[k] ? 1 : a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+const versionsFor = (hid) => [...S.versions.values()].filter((v) => v.household_id === hid).sort(byTime('created_at'));
+const decisionsFor = (hid) => (S.decisions.get(hid) || []).slice().sort(byTime('decided_at'));
+function approvalCheck(d) {
+  const v = S.versions.get(d.version_id);
+  if (!v || v.household_id !== d.household_id) return { ok: false, why: 'the approved version is missing' };
+  if (!S.verified.has(v.key)) return { ok: null, why: 'checking' };
+  if (S.verified.get(v.key) !== true || v.sha256 !== d.plan_sha256) return { ok: false, why: 'the plan text does not match the fingerprint that was approved' };
+  if (v.author === d.author) {
+    // The decision's own four_eyes field is written by the approver, so it never decides alone.
+    if (S.workflow.four_eyes !== false) return { ok: false, why: 'the person who saved it also approved it, and four-eyes is on' };
+    if (d.four_eyes !== false) return { ok: false, why: 'the person who saved it also approved it, with four-eyes on' };
+  }
+  return { ok: true, why: '' };
+}
+function workflowOf(hid) {
+  const ds = decisionsFor(hid);
+  let Dn = null;
+  for (let i = ds.length - 1; i >= 0; i--) { if (ds[i].decision === 'approved' && approvalCheck(ds[i]).ok !== true) continue; Dn = ds[i]; break; }
+  const F = S.files.get(hid);
+  const fAt = F && (F.status === 'drafting' || F.status === 'submitted') ? F.updated_at || '' : '';
+  const dAt = Dn ? Dn.decided_at || '' : '';
+  if (Dn && (Dn.decision === 'approved' || Dn.decision === 'rejected')) return { state: Dn.decision, at: dAt, by: Dn.author, decision: Dn };
+  if (fAt && fAt >= dAt) return { state: F.status, at: fAt, by: F.updated_by, decision: Dn };
+  if (Dn && Dn.decision === 'returned') return { state: 'returned', at: dAt, by: Dn.author, decision: Dn };
+  if (Dn && Dn.decision === 'reopened') return { state: 'drafting', at: dAt, by: Dn.author, decision: Dn };
+  return { state: versionsFor(hid).length ? 'drafting' : 'new', at: '', by: null, decision: Dn };
+}
+// Approvals that did not count, so the page can say why.
+const badApprovals = (hid) => decisionsFor(hid).filter((d) => d.decision === 'approved').map((d) => [d, approvalCheck(d)]).filter(([, c]) => c.ok === false);
+// Reviewer notes for the next draft (screen_rules.json, review): what editors wrote when they
+// returned or rejected the plan since its last approval that counts, oldest first. A note that
+// fails the note checks is held back from Claude and not required. The hosted drafting function
+// builds the same notes from the database, so both send Claude the same prompt.
+function notesFor(r) {
+  if (!S.screenReady || !S.spec.rules.review || !r) return { usable: [], held: [] };
+  try {
+    const notes = TaPrompt.reviewNotesFrom(decisionsFor(r.id), (d) => approvalCheck(d).ok === true, S.spec.rules);
+    return TaScreen.usableNotes(notes, r, S.screenSpec, { deny: [] });
+  } catch (e) { console.warn('reviewer notes failed', e); return { usable: [], held: [] }; }
+}
+const noteKey = (n) => `${n.kind}\n${n.text}`;
+// Every current note is among the notes a version answered, matched by kind and words.
+const covers = (answered, current) => { const have = new Set((answered || []).map(noteKey)); return (current || []).every((n) => have.has(noteKey(n))); };
+const sameNotes = (a, b) => JSON.stringify((a || []).map((n) => [n.id, noteKey(n)])) === JSON.stringify((b || []).map((n) => [n.id, noteKey(n)]));
+// A copy of a plan with one answer per note in review: answers carried over from the notes it
+// answered before (matched by their words, since ids move as notes come in), the placeholder
+// for the rest, and none for notes no longer given.
+function withAnswers(plan, review, before) {
+  const ph = S.spec.rules.review.placeholder, out = clone(plan);
+  const was = new Map((before || []).map((n) => [n.id, noteKey(n)])), byKey = new Map();
+  for (const a of (plan && Array.isArray(plan.responds_to_review) ? plan.responds_to_review : [])) {
+    const k = a && was.get(a.note);
+    if (k && !byKey.has(k)) byKey.set(k, a);
+  }
+  const answers = (review || []).map((n) => { const a = byKey.get(noteKey(n)); return a ? { note: n.id, change: a.change, confidence: a.confidence } : { note: n.id, change: ph, confidence: 'Certain' }; });
+  if (answers.length) out.responds_to_review = answers; else delete out.responds_to_review;
+  return out;
+}
+const noteKind = (n) => (n.kind === 'rejected' ? 'Rejected' : 'Returned');
+const stChip = (state) => h('span', { class: 'st st-' + state }, STATE_LABEL[state] || state);
+// An approval by the person who saved the version (it counts only while four-eyes is off) is
+// marked wherever the state shows, and in the plan pack.
+const onePerson = (w) => { const D = w && w.state === 'approved' ? w.decision : null; const v = D ? S.versions.get(D.version_id) : null; return !!(v && v.author === D.author); };
+const selfChip = (w) => onePerson(w) ? h('span', { class: 'st st-self', title: 'Approved by the person who saved it, with four-eyes off' }, 'One person') : null;
+function currentVersion(hid) {
+  const F = S.files.get(hid);
+  if (F && F.version_id && S.versions.has(F.version_id) && S.versions.get(F.version_id).household_id === hid) return S.versions.get(F.version_id);
+  const all = versionsFor(hid);
+  return all.length ? all[all.length - 1] : null;
+}
+const lastActivity = (hid) => { const ev = S.audit.find((e) => e.household_id === hid); return ev ? ev.at : ''; };
+// The first write anyone makes registers them, so other viewers know whose records to read.
+let registered = false;
+async function ensureMember() {
+  const id = myId();
+  if (registered || !id) return;
+  if (!S.memberIds.has(id)) await S.store.set('members', id, { joined_at: nowIso() });
+  registered = true;
+}
+const newId = (prefix) => `${prefix}~${Date.now().toString(36)}~${Math.random().toString(36).slice(2, 6)}`;
+async function audit(action, hid, detail) {
+  const ev = { at: nowIso(), household_id: hid || null, action, detail: detail || '', spec_version: S.spec.rules ? S.spec.rules.spec_version : null };
+  const write = async () => { await ensureMember(); await S.store.add(ownColl('audit', myId()), ev); };
+  try { await write(); } catch (e) {
+    try { await sleep(500); await write(); } catch { banner('audit', 'bad', 'An action was saved but its audit entry was not. Note what you did and tell the owner.'); }
+  }
+}
+
+/* ============================================================== routing and navigation (fd-core's shell) */
+const VIEWS = ['overview', 'caseload', 'board', 'tasks', 'compliance', 'monitor', 'lessons', 'scenario', 'audit', 'team', 'timings', 'method', 'guide'];
+// Pages with a key of their own: a household, a type of accommodation, a route out.
+const KEYED = ['file', 'type', 'route'];
+// The caseload's queues and views, each with a link of its own (#review, #returned, #mine, #bnb,
+// #ood, #long). "Plans to approve": awaiting approval, and I may approve it (with four-eyes on,
+// not a version I saved). "Returned to me": returned, and I saved the version returned.
+const PRESETS = { all: 'Caseload', review: 'Plans to approve', returned: 'Returned to me', mine: 'My households', bnb: 'Family in B&B', ood: 'Out of district', long: 'Two years or more in TA' };
+const PRESET_LEDE = {
+  review: 'Plans awaiting approval that you may approve. With four-eyes on, a plan you saved is left out: another officer approves it.',
+  returned: 'Plans an editor returned on a version you saved. The next version must answer each note.',
+  mine: 'Households you have taken.',
+  bnb: 'Households whose record raises the check on the six-week limit for families in bed and breakfast.',
+  ood: 'Households placed in another council’s area.',
+  long: 'Households in temporary accommodation for two years (104 weeks) or more.',
+};
+const PRESET_EMPTY = {
+  review: 'No plan is waiting for you to approve.', returned: 'No plan has been returned to you.',
+  mine: 'You have not taken a household yet. Open one and take it.', bnb: 'No household raises this check.',
+  ood: 'No household is placed in another council’s area.', long: 'No household has been in temporary accommodation that long.',
+};
+const PAGE_LABEL = { overview: 'Overview', board: 'Board', tasks: 'Follow-ups', compliance: 'Compliance at risk', monitor: 'Monitor', timings: 'Pilot timings', team: 'Team and access', caseload: 'Caseload', lessons: 'Lessons', scenario: 'Scenario', audit: 'Audit log', method: 'Method', guide: 'How it works' };
+const versionAuthor = (hid) => { const v = currentVersion(hid); return v ? v.author : null; };
+function inPreset(r, p) {
+  if (p === 'all') return true;
+  if (p === 'bnb') return r.suitability_checks.includes('bnb-family-limit');
+  if (p === 'ood') return r.suitability_checks.includes('out-of-district');
+  if (p === 'long') return r.weeks_in_ta >= 104;
+  if (p === 'mine') { const F = S.files.get(r.id); return !!(F && F.assignee && F.assignee === myId()); }
+  const w = workflowOf(r.id);
+  if (p === 'review') return w.state === 'submitted' && canApprove() && !(versionAuthor(r.id) === myId() && S.workflow.four_eyes !== false);
+  if (p === 'returned') return w.state === 'returned' && !!myId() && versionAuthor(r.id) === myId();
+  return false;
+}
+// What each household needs next, for the caseload's groups: the first that fits.
+const JOBS = [
+  ['review', 'Plans to approve', (r) => inPreset(r, 'review')],
+  ['returned', 'Returned to me', (r) => inPreset(r, 'returned')],
+  ['awaiting', 'Awaiting approval', (r, w) => w.state === 'submitted'],
+  ['progress', 'In progress', (r, w) => ['drafting', 'returned'].includes(w.state)],
+  ['new', 'No plan yet', (r, w) => w.state === 'new'],
+  ['approved', 'Approved', (r, w) => w.state === 'approved'],
+  ['rejected', 'Plan rejected', (r, w) => w.state === 'rejected'],
+];
+// The households a list shows, in its order: the preset, then the filters, then the sort; the
+// whole caseload is grouped by what each household needs next.
+function filtered(p) {
+  const f = S.filter, q = (f.q || '').trim().toUpperCase();
+  return sortRecords(S.records.filter((r) => inPreset(r, p)
+    && (f.type === 'all' || r.accommodation_type === f.type)
+    && (f.check === 'all' || r.suitability_checks.includes(f.check))
+    && (!q || r.id.includes(q))));
+}
+function caseGroups(p) {
+  const rows = filtered(p);
+  if (p !== 'all') return [[p, PRESETS[p], rows]];
+  const out = JOBS.map(([id, label]) => [id, label, []]);
+  for (const r of rows) { const w = workflowOf(r.id); const i = JOBS.findIndex(([, , fit]) => fit(r, w)); out[i < 0 ? out.length - 1 : i][2].push(r); }
+  return out.filter((g) => g[2].length);
+}
+const orderedRecords = (p) => caseGroups(p).flatMap((g) => g[2]);
+function goList(preset) {
+  S.preset = PRESETS[preset] ? preset : 'all';
+  local.set('preset', S.preset);
+  go('caseload');
+}
+function go(view, hid) {
+  const from = S.view;
+  if (view !== from) S.monKeep.clear();
+  S.view = view; S.fileId = view === 'file' ? hid || null : null; S.groupKey = view === 'type' || view === 'route' ? hid || null : null;
+  for (const v of [...VIEWS, ...KEYED]) $('#view-' + v).hidden = v !== view;
+  if (view !== 'file') $('#view-file').dataset.hid = '';
+  if (!KEYED.includes(view)) local.set('view', view);
+  if (view === 'file' && hid) { const rec = local.get('recent', []).filter((k) => k !== hid); rec.unshift(hid); local.set('recent', rec.slice(0, 5)); S.lastRow = hid; }
+  const token = view === 'caseload' && S.preset && S.preset !== 'all' ? S.preset : KEYED.includes(view) ? view + '-' + hid : view;
+  try { history.replaceState(null, '', '#' + token); } catch { /* history unavailable */ }
+  render();
+  // Back from a household puts the focus on its row; anything else starts at the top.
+  if (from === 'file' && view === 'caseload' && S.lastRow) {
+    const row = document.querySelector(`#view-caseload button.crow[title="Open ${S.lastRow}"]`);
+    if (row) { row.focus({ preventScroll: true }); row.scrollIntoView({ block: 'center' }); return; }
+  }
+  window.scrollTo({ top: 0 });
+}
+function routeFromHash() {
+  const t = (location.hash || '').slice(1);
+  if (t.startsWith('file-') && S.byId.has(t.slice(5))) return go('file', t.slice(5));
+  if (t.startsWith('type-') && S.records.some((r) => r.accommodation_type === t.slice(5))) return go('type', t.slice(5));
+  if (t.startsWith('route-') && S.records.some((r) => r.eligible_pathways.some((p) => p.pathway_id === t.slice(6)))) return go('route', t.slice(6));
+  if (PRESETS[t] && t !== 'all') return goList(t);
+  if (t === 'caseload') return goList('all');
+  if (VIEWS.includes(t)) return go(t);
+  const v = local.get('view', 'overview');
+  if (v === 'caseload') return goList(local.get('preset', 'all'));
+  go(VIEWS.includes(v) ? v : 'overview');
+}
+const backToList = () => go('caseload');
+function stepRecord(delta) {
+  if (S.view !== 'file') return;
+  const list = orderedRecords(S.preset || 'all'), i = list.findIndex((r) => r.id === S.fileId);
+  if (i >= 0 && list[i + delta]) go('file', list[i + delta].id);
+}
+function navModel() {
+  const n = (p) => S.records.filter((r) => inPreset(r, p)).length;
+  const waiting = typeof Lessons !== 'undefined' && Lessons.waitingCount ? Lessons.waitingCount() : 0;
+  const q = (id, count, domId) => ({ id, label: PRESETS[id], count, domId: domId || 'nav-' + id, onSelect: () => goList(id) });
+  const page = (id, count) => ({ id, label: PAGE_LABEL[id], count, domId: 'tab-' + id, onSelect: () => go(id) });
+  const work = (id) => { const c = n(id); return q(id, c || null); };
+  return [
+    { title: 'Work', items: [page('overview'), { ...q('all', S.records.length, 'tab-caseload'), id: 'caseload', label: 'Caseload' }, page('board'), page('tasks', myOpenTasks().length || null), page('compliance', riskCount() || null), page('monitor', monWaiting() || null), work('review'), work('returned'), work('mine')] },
+    { title: 'Views', items: [q('bnb', n('bnb')), q('ood', n('ood')), q('long', n('long'))] },
+    { title: 'Tools', items: [page('scenario'), page('lessons', waiting || null)] },
+    { title: 'Reference', items: [page('guide'), page('method'), page('audit'), page('team'), page('timings')] },
+  ];
+}
+function activeNav() {
+  if (S.view === 'caseload' || S.view === 'file' || S.view === 'type' || S.view === 'route') return !S.preset || S.preset === 'all' ? 'caseload' : S.preset;
+  return S.view;
+}
+function crumbsModel() {
+  const p = S.preset || 'all';
+  const list = p === 'all' ? [{ label: 'Caseload', onSelect: () => goList('all') }] : [{ label: 'Caseload', onSelect: () => goList('all') }, { label: PRESETS[p], onSelect: () => goList(p) }];
+  if (S.view === 'caseload') return list;
+  if (S.view === 'file') {
+    const r = S.byId.get(S.fileId);
+    return r ? [...list, { label: TYPE_LABEL[r.accommodation_type] || r.accommodation, onSelect: () => go('type', r.accommodation_type) }, { label: S.fileId }] : [...list, { label: S.fileId || '' }];
+  }
+  if (S.view === 'type') return [{ label: 'Caseload', onSelect: () => goList('all') }, { label: TYPE_LABEL[S.groupKey] || S.groupKey || '' }];
+  if (S.view === 'route') return [{ label: 'Caseload', onSelect: () => goList('all') }, { label: PATHWAY_SHORT[S.groupKey] || S.groupKey || '' }];
+  return [{ label: PAGE_LABEL[S.view] || '' }];
+}
+function searchModel(q) {
+  const items = [];
+  const goTo = (label, run, keywords) => items.push({ group: 'Go to', label, run, keywords });
+  for (const [k, label] of Object.entries(PRESETS)) goTo(label, () => goList(k), k === 'all' ? 'caseload households list' : 'caseload queue view');
+  for (const v of VIEWS.filter((x) => x !== 'caseload')) goTo(PAGE_LABEL[v], () => go(v));
+  if (String(q || '').trim()) {
+    for (const [k, label] of Object.entries(TYPE_LABEL)) if (S.records.some((r) => r.accommodation_type === k)) items.push({ group: 'Types and routes', label: `${label}: every household`, hint: 'Type', run: () => go('type', k) });
+    for (const [k, label] of Object.entries(PATHWAY_SHORT)) items.push({ group: 'Types and routes', label: `${label}: every household it is listed for`, hint: 'Route', run: () => go('route', k) });
+  }
+  if (!String(q || '').trim()) {
+    for (const id of local.get('recent', [])) {
+      const r = S.byId.get(id);
+      if (r) items.push({ group: 'Recent households', label: `${r.id} · ${cap(r.household_type)}`, sub: TYPE_LABEL[r.accommodation_type] || r.accommodation, hint: STATE_LABEL[workflowOf(r.id).state], run: () => go('file', r.id) });
+    }
+  }
+  for (const r of S.records) {
+    const w = workflowOf(r.id);
+    items.push({ group: 'Households', label: `${r.id} · ${cap(r.household_type)}`, sub: `${TYPE_LABEL[r.accommodation_type] || r.accommodation} · ${r.weeks_in_ta} ${plural(r.weeks_in_ta, 'week', 'weeks')} in TA`, hint: STATE_LABEL[w.state],
+      keywords: [r.id.replace('SYN-', ''), ...flagsOf(r).map((c) => CHECK_LABEL[c] || c), ...r.eligible_pathways.map((p) => PATHWAY_SHORT[p.pathway_id] || p.pathway_id), STATE_LABEL[w.state]].join(' '),
+      run: () => go('file', r.id) });
+  }
+  if (S.view === 'file') {
+    const jump = (label, sel) => items.push({ group: 'This household', label, run: () => { const el = document.querySelector(sel); if (el) el.scrollIntoView({ block: 'start' }); } });
+    jump('The plan', '#slot-plan'); jump('Progress', '#slot-progress'); jump('Checks', '#slot-checks'); jump('Routes out and context', '#slot-context'); jump('Activity', '#slot-activity');
+  }
+  return FdShell.pick(q, items, 7);
+}
+const SHORTCUTS = [
+  { keys: ['g', 'o'], label: 'Go to the overview', run: () => go('overview') },
+  { keys: ['g', 'c'], label: 'Go to the caseload', run: () => goList('all') },
+  { keys: ['g', 'b'], label: 'Go to the board', run: () => go('board') },
+  { keys: ['g', 'f'], label: 'Go to your follow-ups', run: () => go('tasks') },
+  { keys: ['g', 'p'], label: 'Go to Plans to approve', run: () => goList('review') },
+  { keys: ['g', 'r'], label: 'Go to Returned to me', run: () => goList('returned') },
+  { keys: ['g', 'h'], label: 'Go to My households', run: () => goList('mine') },
+  { keys: ['g', 's'], label: 'Go to the scenario', run: () => go('scenario') },
+  { keys: ['g', 'l'], label: 'Go to Lessons', run: () => go('lessons') },
+  { keys: ['g', 'a'], label: 'Go to the audit log', run: () => go('audit') },
+  { keys: ['g', 'm'], label: 'Go to Method', run: () => go('method') },
+  { keys: ['g', 'w'], label: 'Go to How it works', run: () => go('guide') },
+];
+function mountShell() {
+  if (!window.FdShell || S.shell) return;
+  S.shell = FdShell.mountShell({
+    brand: { title: 'Move forward', sub: 'Planner', mark: true },
+    // The hosted version's sign-in bar (app/src/hosted.js), when there is one, goes under the top bar.
+    move: [document.querySelector('.hs-bar'), $('#banners'), $('#main'), $('#page-foot')],
+    topRight: $('#chips'), footer: $('#who-slot'),
+    nav: navModel, active: activeNav, crumbs: crumbsModel, search: searchModel, shortcuts: SHORTCUTS,
+    findLabel: 'Search households and pages', findPlaceholder: 'A record id, a type of accommodation, a check or a page',
+    emptyHint: 'Try a record id such as SYN-0114, a type of accommodation, a check or a page name.',
+    rows: '.view:not([hidden]) button.crow', step: stepRecord, back: () => { if (S.view === 'file') backToList(); },
+  });
+}
+document.documentElement.lang = 'en-GB';
+
+/* ============================================================== render loop */
+let queued = false;
+function refresh() { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; render(); }); }
+function render() {
+  DRAW_GEN++;
+  // A redraw replaces the rows; keep the keyboard's place across it (an element by its id, or a row
+  // by its label or title), as a late load or a store refresh can redraw a list while someone moves
+  // through it.
+  const was = document.activeElement;
+  const inMain = was && was !== document.body && was.closest && was.closest('#main');
+  const attr = inMain ? (was.id ? 'id' : was.getAttribute('aria-label') ? 'aria-label' : was.getAttribute('title') ? 'title' : null) : null;
+  const value = attr ? was.getAttribute(attr) : null;
+  drawView();
+  if (value && !was.isConnected) {
+    const again = document.querySelector(`#main [${attr}="${value.replace(/["\\]/g, '\\$&')}"]`);
+    if (again) again.focus({ preventScroll: true });
+  }
+  if (S.focusNext) {
+    const el = document.getElementById(S.focusNext);
+    if (el) { S.focusNext = null; el.focus(); }
+  }
+}
+function drawView() {
+  if (S.shell) S.shell.update();
+  drawChips();
+  if (!S.records.length) return;
+  if (S.view === 'overview') drawOverview();
+  else if (S.view === 'board') drawBoard();
+  else if (S.view === 'tasks') drawTasks();
+  else if (S.view === 'compliance') drawCompliance();
+  else if (S.view === 'monitor') drawMonitor();
+  else if (S.view === 'timings') drawTimings();
+  else if (S.view === 'team') drawTeam();
+  else if (S.view === 'type') drawType();
+  else if (S.view === 'route') drawRoute();
+  else if (S.view === 'caseload') drawCaseload();
+  else if (S.view === 'file') drawFile();
+  else if (S.view === 'lessons') Lessons.draw();
+  else if (S.view === 'scenario') drawScenario();
+  else if (S.view === 'audit') drawAudit();
+  else if (S.view === 'method') drawMethod();
+  else if (S.view === 'guide') drawGuide();
+}
+function drawChips() {
+  if (S.data) $('#data-chip').textContent = `${S.records.length} synthetic households · seed ${S.data.meta.seed}`;
+  const sc = $('#store-chip');
+  sc.className = 'chip ' + (S.storeState === 'live' ? 'live' : S.storeState === 'demo' ? 'demo' : '');
+  swap(sc, h('span', { class: 'dot' }), S.storeState === 'live' ? 'Shared store' : S.storeState === 'demo' ? 'Demo mode' : 'Connecting…');
+  const wc = $('#who-chip');
+  if (S.storeState === 'connecting') { wc.hidden = true; return; }
+  wc.hidden = false;
+  if (isDemo()) {
+    const p = DEMO_PEOPLE[demoMe()];
+    swap(wc, h('span', { class: 'who-av', 'aria-hidden': 'true' }, p.initials), h('span', { class: 'who-t' }, h('b', null, p.name), h('span', null, p.role)),
+      HOSTED ? null : h('button', { class: 'btn quiet small who-switch', onclick: () => showPortal() }, 'Switch user'),
+      session.get('demo_roles') === '1' ? h('button', { class: 'btn quiet small who-switch', onclick: () => leaveDemo() }, 'Back to the shared planner') : null);
+    return;
+  }
+  const role = S.me.role;
+  swap(wc, S.me.avatar ? h('img', { src: S.me.avatar, alt: '' }) : null, (S.me.name || 'You') + (role ? ' · ' + role : ''),
+    !HOSTED && S.storeState === 'live' && sessionOk() ? h('button', { class: 'btn quiet small who-switch', title: 'Try each role in this tab, on a store of its own', onclick: () => enterDemo() }, 'Try the demo roles') : null);
+}
+
+// A short confirmation at the foot of the screen (fd-core's shell), with an action such as Undo.
+const say = (text, action) => (window.FdShell && FdShell.toast ? FdShell.toast(text, action ? { action } : {}) : null);
+const DECIDED = { approved: 'Approved.', returned: 'Returned with your note.', rejected: 'Rejected.', reopened: 'Reopened.' };
+
+/* ============================================================== overview and board
+   What a team leader needs first: where every household's plan stands, what is waiting for a
+   decision and for how long, how long households have been in TA, the checks raised, and the
+   caseload's weekly cost range from its synthetic bands. */
+function ageText(iso) {
+  const t = Date.parse(iso);
+  if (isNaN(t)) return '';
+  const days = Math.floor((clockNow().getTime() - t) / 86400000);
+  return days <= 0 ? 'today' : days === 1 ? '1 day' : `${days} days`;
+}
+// The pipeline, one column per stage of a household's plan and its progress.
+const LANES = [
+  ['none', 'No plan', 'No plan saved yet'],
+  ['drafting', 'Drafting', 'A plan saved, not yet submitted'],
+  ['returned', 'Returned', 'Sent back with a note'],
+  ['submitted', 'Awaiting approval', 'A second officer decides'],
+  ['approved', 'Approved', 'Approved; no step recorded yet'],
+  ['moving', 'Moving on', 'Referral, offer or acceptance recorded'],
+  ['moved', 'Moved on', 'Recorded on an approved plan'],
+  ['stopped', 'Stopped', 'Plan rejected or the move fell through'],
+];
+function laneOf(r) {
+  const w = workflowOf(r.id), M = S.moves.get(r.id);
+  if (w.state === 'new') return 'none';
+  if (w.state === 'rejected') return 'stopped';
+  if (w.state !== 'approved') return w.state;
+  const st = M && M.stage;
+  if (st === 'moved') return 'moved';
+  if (st === 'fell_through') return 'stopped';
+  if (st && st !== 'none') return 'moving';
+  return 'approved';
+}
+const TA_BANDS = [['Under 6 months', 0, 26], ['6 to 12 months', 26, 52], ['1 to 2 years', 52, 104], ['2 years or more', 104, Infinity]];
+// Sizes are set through the element's style object, not a style attribute, so the hosted page's
+// Content-Security-Policy (no inline style attributes) still allows them.
+const sized = (el, prop, value) => { el.style[prop] = value; return el; };
+function barList(rows, total, onClick) {
+  return h('div', { class: 'bars' }, rows.map(([label, n, key]) => h(onClick && key ? 'button' : 'div', {
+    class: 'bar-row' + (onClick && key ? ' bar-link' : ''), onclick: onClick && key ? () => onClick(key) : null, 'aria-label': `${label}: ${n}` },
+  h('span', { class: 'bar-label' }, label), h('span', { class: 'bar-track' }, sized(h('span', { class: 'bar-fill' }), 'width', `${total ? Math.max(n ? 2 : 0, Math.round((n / total) * 100)) : 0}%`)), h('span', { class: 'bar-n' }, intGB(n)))));
+}
+function drawOverview() {
+  const v = $('#view-overview');
+  const recs = S.records;
+  const rows = recs.map((r) => ({ r, w: workflowOf(r.id), lane: laneOf(r), F: S.files.get(r.id) }));
+  const count = (k) => rows.filter((x) => x.lane === k).length;
+  const waiting = rows.filter((x) => x.w.state === 'submitted').sort((a, b) => (a.w.at < b.w.at ? -1 : 1));
+  const returned = rows.filter((x) => x.w.state === 'returned');
+  const flags = Object.fromEntries(FLAG_CHECKS.map((c) => [c, recs.filter((r) => r.suitability_checks.includes(c)).length]));
+  const bands = TA_BANDS.map(([l, a, b]) => [l, recs.filter((r) => r.weeks_in_ta >= a && r.weeks_in_ta < b).length, l === '2 years or more' ? 'long' : null]);
+  const types = Object.keys(TYPE_LABEL).map((t) => [t, recs.filter((r) => r.accommodation_type === t)]).filter(([, rs]) => rs.length);
+  const low = recs.reduce((t, r) => t + (+r.weekly_cost_from || 0), 0);
+  const openTop = recs.filter((r) => r.weekly_cost_to === null || r.weekly_cost_to === undefined).length;
+  const high = recs.reduce((t, r) => t + (r.weekly_cost_to === null || r.weekly_cost_to === undefined ? +r.weekly_cost_from || 0 : +r.weekly_cost_to), 0);
+  const ids = [];
+  const people = new Map();
+  for (const x of rows) if (x.F && x.F.assignee) { ids.push(x.F.assignee); const p = people.get(x.F.assignee) || { taken: 0, submitted: 0, approved: 0 }; p.taken++; if (x.w.state === 'submitted') p.submitted++; if (x.w.state === 'approved') p.approved++; people.set(x.F.assignee, p); }
+  resolvePeople(ids);
+  const line = (x, right) => h('button', { class: 'ov-row', onclick: () => go('file', x.r.id), 'aria-label': `Open ${x.r.id}` },
+    h('span', { class: 'ov-main' }, h('span', { class: 'ov-title' }, h('span', { class: 'c-id' }, x.r.id), ' ', cap(x.r.household_type)), h('span', { class: 'ov-sub' }, `${TYPE_LABEL[x.r.accommodation_type] || x.r.accommodation} · ${x.r.weeks_in_ta} ${plural(x.r.weeks_in_ta, 'week', 'weeks')} in TA`)),
+    h('span', { class: 'ov-side' }, right));
+  const card = (title, sub, ...kids) => h('section', { class: 'card ov-card' }, h('div', { class: 'card-head' }, h('h2', { class: 'h2' }, title), sub ? h('span', { class: 'note' }, sub) : null), ...kids);
+  const empty = (t) => h('p', { class: 'ov-empty' }, t);
+  const tile = (lbl, val, capText, onclick) => h(onclick ? 'button' : 'div', { class: 'kpi' + (onclick ? ' kpi-link' : ''), onclick: onclick || null }, h('span', { class: 'lbl' }, lbl), h('span', { class: 'val' }, val), h('span', { class: 'cap' }, capText));
+  swap(v,
+    h('div', { class: 'head' },
+      h('p', { class: 'eyebrow' }, `${recs.length} synthetic households · seed ${S.data.meta.seed}`),
+      h('h1', { class: 'h1' }, 'Overview'),
+      h('p', { class: 'lede' }, 'Where every household’s plan stands, what is waiting for a decision, and how long households have been in temporary accommodation.')),
+    h('div', { class: 'kpis' },
+      tile('Awaiting approval', intGB(waiting.length), waiting.length ? `the oldest waiting ${ageText(waiting[0].w.at)}` : 'nothing waiting', waiting.length ? () => goList('review') : null),
+      tile('No plan yet', intGB(count('none')), `of ${recs.length} households`, () => go('board')),
+      tile('Approved plans still live', intGB(count('approved') + count('moving') + count('moved')), `${count('moving')} moving on, ${count('moved')} moved; fell through counted under Stopped`, () => go('board')),
+      tile('Two years or more in TA', intGB(bands[3][1]), '104 weeks or more', () => goList('long'))),
+    h('div', { class: 'ov-grid' },
+      h('div', { class: 'ov-stack' },
+        card('Needs a decision', waiting.length ? 'oldest first' : null, h('div', { class: 'ov-list' },
+          waiting.length ? waiting.map((x) => line(x, [h('span', { class: 'st st-submitted' }, 'Awaiting approval'), h('span', { class: 'ov-age' }, ageText(x.w.at))])) : empty('Nothing is waiting for approval. A plan submitted for approval appears here, oldest first.'),
+          returned.map((x) => line(x, [h('span', { class: 'st st-returned' }, 'Returned'), h('span', { class: 'ov-age' }, ageText(x.w.at))]))),
+          h('button', { class: 'btn quiet small', onclick: () => goList('all') }, 'Open the caseload →')),
+        card('The pipeline', 'every household, by where its plan stands',
+          h('div', { class: 'pipe', role: 'img', 'aria-label': LANES.map(([k, l]) => `${l} ${count(k)}`).join(', ') },
+            LANES.filter(([k]) => count(k)).map(([k, l]) => sized(h('span', { class: 'pipe-seg lane-' + k, title: `${l}: ${count(k)}` }), 'flex', String(count(k))))),
+          h('div', { class: 'pipe-key' }, LANES.map(([k, l]) => h('span', { class: 'pipe-k' }, h('i', { class: 'lane-' + k }), `${l} `, h('b', null, intGB(count(k)))))),
+          h('button', { class: 'btn small', onclick: () => go('board') }, 'Open the board'))),
+      h('div', { class: 'ov-stack' },
+        card('Time in temporary accommodation', 'weeks in TA so far', barList(bands, recs.length, (k) => goList(k))),
+        card('Checks raised', 'a selection of the checks legislation and guidance set, not a complete list',
+          barList(FLAG_CHECKS.map((c) => [CHECK_LABEL[c] || c, flags[c], c === 'bnb-family-limit' ? 'bnb' : c === 'out-of-district' ? 'ood' : null]), recs.length, (k) => goList(k))))),
+    h('div', { class: 'ov-grid' },
+      card('Weekly cost of the caseload', 'synthetic',
+        h('p', { class: 'ov-big' }, `£${intGB(low)} to £${intGB(high)}${openTop ? '+' : ''} a week`),
+        h('p', { class: 'note' }, `The sum of each household’s synthetic weekly cost band${openTop ? `; ${openTop} ${plural(openTop, 'sits', 'sit')} in the open top band, counted at its lower figure` : ''}. The bands are drawn around England’s average gross cost a week for each type of accommodation (${S.data.meta.published_inputs.cost_year}, revenue outturn), so this is not any council’s spend and not a saving [Certain]. The scenario does the arithmetic of a change of mix on figures you set.`),
+        barList(types.map(([t, rs]) => [TYPE_LABEL[t] || t, rs.length, null]), recs.length),
+        h('button', { class: 'btn quiet small', onclick: () => go('scenario') }, 'Open the scenario →')),
+      card('Who holds what', null, people.size
+        ? h('div', { class: 'scroll' }, h('table', null, h('thead', null, h('tr', null, h('th', null, 'Officer'), h('th', { class: 'num' }, 'Households taken'), h('th', { class: 'num' }, 'Awaiting approval'), h('th', { class: 'num' }, 'Approved'))),
+          h('tbody', null, [...people.entries()].map(([id, p]) => h('tr', null, h('td', null, whoLine(id)), h('td', { class: 'num' }, String(p.taken)), h('td', { class: 'num' }, String(p.submitted)), h('td', { class: 'num' }, String(p.approved)))))))
+        : empty('Nobody has taken a household yet. Open one and choose Take this household.'))),
+    h('p', { class: 'house' }, 'Synthetic records only. Plans are suggestions for an officer to approve; each statutory decision is made and recorded outside the planner.'));
+}
+function drawBoard() {
+  const v = $('#view-board');
+  const LIMIT = 24;
+  if (!S.boardType) S.boardType = 'all';
+  const recs = S.records.filter((r) => S.boardType === 'all' || r.accommodation_type === S.boardType);
+  const lanes = LANES.map(([k, l, sub]) => [k, l, sub, recs.filter((r) => laneOf(r) === k).sort((a, b) => (b.weeks_in_ta - a.weeks_in_ta) || (a.id < b.id ? -1 : 1))]);
+  const ids = [];
+  const cardFor = (r) => {
+    const F = S.files.get(r.id); if (F && F.assignee) ids.push(F.assignee);
+    const M = S.moves.get(r.id);
+    return h('button', { class: 'bcard', onclick: () => go('file', r.id) },
+      h('span', { class: 'bcard-top' }, h('span', { class: 'c-id' }, r.id), h('span', { class: 'bcard-wk' }, `${r.weeks_in_ta} wk`)),
+      h('span', { class: 'bcard-title' }, cap(r.household_type)),
+      h('span', { class: 'bcard-sub' }, TYPE_LABEL[r.accommodation_type] || r.accommodation),
+      flagsOf(r).length ? h('span', { class: 'bcard-tags' }, flagsOf(r).slice(0, 2).map(flagTag)) : null,
+      M && M.stage && M.stage !== 'none' ? h('span', { class: 'stage' }, STAGE_LABEL[M.stage]) : null,
+      F && F.assignee ? whoLine(F.assignee) : null);
+  };
+  const cols = lanes.map(([k, l, sub, rs]) => h('section', { class: 'lane', 'aria-label': `${l}: ${rs.length}` },
+    h('header', { class: 'lane-head' }, h('i', { class: 'lane-' + k }), h('span', { class: 'lane-name' }, l), h('span', { class: 'lane-n' }, intGB(rs.length))),
+    h('p', { class: 'lane-sub' }, sub),
+    h('div', { class: 'lane-cards' }, rs.slice(0, LIMIT).map(cardFor),
+      rs.length > LIMIT ? h('button', { class: 'btn quiet small', onclick: () => goList('all') }, `${rs.length - LIMIT} more in the caseload →`) : null,
+      rs.length ? null : h('p', { class: 'lane-empty' }, 'None'))));
+  resolvePeople(ids);
+  swap(v,
+    h('div', { class: 'head' },
+      h('p', { class: 'eyebrow' }, `${S.records.length} synthetic households`),
+      h('h1', { class: 'h1' }, 'Board'),
+      h('p', { class: 'lede' }, 'Every household by where its plan stands, longest in TA first. A card opens the household; its plan moves on through the file, never by dragging, so each step keeps its approval.')),
+    h('div', { class: 'row filters-row' },
+      h('label', { class: 'field inline' }, 'Accommodation', h('select', { onchange: (e) => { S.boardType = e.target.value; drawBoard(); } },
+        [['all', 'All types'], ...Object.entries(TYPE_LABEL)].map(([k, t]) => h('option', { value: k, selected: S.boardType === k }, t)))),
+      h('span', { class: 'muted small' }, `${recs.length} of ${S.records.length} households`)),
+    h('div', { class: 'board' }, cols),
+    h('p', { class: 'note' }, 'Shift and the mouse wheel, or the trackpad, scroll the board sideways. j and k move through the caseload list, not the board.'));
+}
+
+/* ============================================================== caseload */
+function householdLine(r) {
+  const who = `${r.adults} ${plural(r.adults, 'adult', 'adults')}` + (r.children ? `, ${r.children} ${plural(r.children, 'child', 'children')}` : '');
+  return `${who} · ${r.priority_need}`;
+}
+const flagsOf = (r) => r.suitability_checks.filter((c) => FLAG_CHECKS.includes(c));
+const flagTag = (c) => h('span', { class: 'flag flag-' + c }, CHECK_LABEL[c] || c);
+const pathTag = (pid) => h('span', { class: 'ptag' }, PATHWAY_SHORT[pid] || pid);
+function sortRecords(rows) {
+  const by = S.filter.sort;
+  const cmp = by === 'id' ? (a, b) => (a.id < b.id ? -1 : 1)
+    : by === 'cost' ? (a, b) => (b.weekly_cost_from - a.weekly_cost_from) || (a.id < b.id ? -1 : 1)
+      : by === 'activity' ? (a, b) => ((lastActivity(b.id) || '') > (lastActivity(a.id) || '') ? 1 : (lastActivity(b.id) || '') < (lastActivity(a.id) || '') ? -1 : a.id < b.id ? -1 : 1)
+        : (a, b) => (b.weeks_in_ta - a.weeks_in_ta) || (a.id < b.id ? -1 : 1);
+  return rows.slice().sort(cmp);
+}
+function setFilter(k, v) { S.filter[k] = v; local.set('filter', S.filter); refresh(); }
+function caseRow(r, ids) {
+  const w = workflowOf(r.id), F = S.files.get(r.id), M = S.moves.get(r.id);
+  if (F && F.assignee) ids.push(F.assignee);
+  const last = lastActivity(r.id);
+  return h('button', { class: 'crow', onclick: () => go('file', r.id), title: `Open ${r.id}` },
+    h('div', { class: 'c-cell c-main' }, h('span', { class: 'c-id' }, r.id), h('span', { class: 'c-title' }, cap(r.household_type)), h('span', { class: 'c-sub' }, householdLine(r))),
+    h('div', { class: 'c-cell' }, h('span', null, TYPE_LABEL[r.accommodation_type] || r.accommodation), h('span', { class: 'muted' }, `${r.weeks_in_ta} ${plural(r.weeks_in_ta, 'week', 'weeks')} in TA · ${r.weekly_cost_band} a week`)),
+    h('div', { class: 'c-cell c-tags' }, flagsOf(r).length ? flagsOf(r).map(flagTag) : h('span', { class: 'muted' }, 'No other check raised')),
+    h('div', { class: 'c-cell c-tags' }, r.eligible_pathways.map((p) => pathTag(p.pathway_id))),
+    h('div', { class: 'c-cell' }, h('div', { class: 'c-st' }, stChip(w.state), selfChip(w), w.state === 'approved' && M && M.stage && M.stage !== 'none' ? h('span', { class: 'stage' }, STAGE_LABEL[M.stage]) : null),
+      F && F.assignee ? whoLine(F.assignee) : h('span', { class: 'muted' }, last ? 'Last activity ' + stamp(last) : 'Unassigned')));
+}
+function drawCaseload() {
+  const v = $('#view-caseload');
+  const p = S.preset || 'all';
+  const states = { new: 0, drafting: 0, submitted: 0, returned: 0, approved: 0, rejected: 0 };
+  const flags = Object.fromEntries(FLAG_CHECKS.map((c) => [c, 0]));
+  const types = {};
+  let moved = 0;
+  for (const r of S.records) {
+    const w = workflowOf(r.id);
+    states[w.state] = (states[w.state] || 0) + 1;
+    for (const c of flagsOf(r)) flags[c]++;
+    types[r.accommodation_type] = (types[r.accommodation_type] || 0) + 1;
+    const M = S.moves.get(r.id);
+    if (w.state === 'approved' && M && M.stage === 'moved') moved++;
+  }
+  const f = S.filter;
+  const groups = caseGroups(p);
+  const total = groups.reduce((n, g) => n + g[2].length, 0);
+  const inPresetCount = p === 'all' ? S.records.length : S.records.filter((r) => inPreset(r, p)).length;
+  const ids = [], body = [];
+  for (const [id, label, rows] of groups) {
+    if (p === 'all') body.push(h('div', { class: 'qgroup', role: 'presentation', 'data-group': id }, h('span', null, label), h('span', { class: 'count' }, String(rows.length))));
+    for (const r of rows) body.push(caseRow(r, ids));
+  }
+  resolvePeople(ids);
+  const select = (label, key, opts) => h('label', { class: 'field inline' }, label,
+    h('select', { onchange: (e) => setFilter(key, e.target.value) }, opts.map(([val, text]) => h('option', { value: val, selected: f[key] === val }, text))));
+  const search = h('input', { type: 'search', placeholder: 'SYN-0001', value: f.q, 'aria-label': 'Find a record id', oninput: (e) => { S.filter.q = e.target.value; local.set('filter', S.filter); refresh(); } });
+  const keepFocus = document.activeElement && document.activeElement.getAttribute('aria-label') === 'Find a record id';
+  const filtersOn = f.type !== 'all' || f.check !== 'all' || !!(f.q || '').trim();
+  const kpiLink = (label, val, capText, preset) => h('button', { class: 'kpi kpi-link', onclick: () => goList(preset), 'aria-label': `${label}: ${val}, ${capText}. Show them` },
+    h('span', { class: 'lbl' }, label), h('span', { class: 'val' }, val), h('span', { class: 'cap' }, capText));
+  const head = p === 'all'
+    ? h('div', { class: 'head' }, h('h1', { class: 'h1' }, 'Caseload'),
+      h('p', { class: 'lede' }, `${S.records.length} synthetic households in temporary accommodation. Each record carries its routes out and a selection of the checks legislation and guidance give for it, not a complete list. Open a household to draft a plan; a second officer approves it.`))
+    : h('div', { class: 'head' },
+      h('div', { class: 'head-row' }, h('h1', { class: 'h1' }, PRESETS[p]),
+        h('button', { class: 'filter-chip', onclick: () => goList('all'), 'aria-label': 'Clear: show the whole caseload' }, `${PRESETS[p]} ×`),
+        h('span', { class: 'muted small' }, `${inPresetCount} of ${S.records.length} households`)),
+      h('p', { class: 'lede' }, PRESET_LEDE[p] || ''));
+  swap(v, head,
+    p === 'all' ? h('div', { class: 'kpis' },
+      kpi('Households', intGB(S.records.length), 'all synthetic'),
+      kpi('Plans approved', intGB(states.approved), `${states.submitted} awaiting approval`),
+      kpi('Moved on', intGB(moved), 'recorded on approved plans'),
+      kpiLink('Family in B&B', intGB(flags['bnb-family-limit']), 'checks against the 6-week limit', 'bnb'),
+      kpiLink('Out of district', intGB(flags['out-of-district']), 'placed in another council’s area', 'ood')) : null,
+    h('div', { class: 'row filters-row' },
+      select('Accommodation', 'type', [['all', 'All types'], ...Object.keys(TYPE_LABEL).map((t) => [t, `${TYPE_LABEL[t]} (${types[t] || 0})`])]),
+      select('Check raised', 'check', [['all', 'Any'], ...FLAG_CHECKS.map((c) => [c, `${CHECK_LABEL[c]} (${flags[c]})`])]),
+      select('Order', 'sort', [['weeks', 'Longest in TA first'], ['cost', 'Highest weekly cost first'], ['activity', 'Latest activity first'], ['id', 'Record id']]),
+      h('label', { class: 'field inline' }, 'Record', search)),
+    h('div', { class: 'queue' },
+      h('div', { class: 'crow chead', 'aria-hidden': 'true' }, h('div', null, 'Household'), h('div', null, 'Accommodation'), h('div', null, 'Checks raised'), h('div', null, 'Pathways listed'), h('div', null, 'Plan')),
+      body.length ? body : h('div', { class: 'empty' }, h('p', null, filtersOn ? 'No household matches these filters.' : PRESET_EMPTY[p] || 'No household matches these filters.'),
+        p !== 'all' ? h('button', { class: 'btn small', onclick: () => goList('all') }, 'Show the whole caseload') : null)),
+    h('p', { class: 'note' }, `${total} of ${S.records.length} shown. Pathways and checks come from tamarket/moveon.py for each record; the page never works them out itself. j and k move through the list, Enter opens a household, and ⌘K or Ctrl K searches everything. ${STATUS_LINE}`));
+  if (keepFocus) { search.focus(); const n = search.value.length; try { search.setSelectionRange(n, n); } catch { /* not a text input */ } }
+}
+const kpi = (label, val, cap) => h('div', { class: 'kpi' }, h('span', { class: 'lbl' }, label), h('span', { class: 'val' }, val), cap ? h('span', { class: 'cap' }, cap) : null);
+
+/* ============================================================== household file */
+function citeLabel(id) {
+  let m;
+  if ((m = /^ha(\d{4})-s(\w+)$/.exec(id))) return `HA ${m[1]} s.${m[2].toUpperCase()}`;
+  if ((m = /^si-(\d{4})-(\d+)$/.exec(id))) return `SI ${m[1]}/${m[2]}`;
+  if ((m = /^code-ch(\d+)$/.exec(id))) return `Code ch. ${m[1]}`;
+  return CITE_SHORT[id] || id;
+}
+function citeTitle(id) { const c = S.moveon.citations[id]; return c ? `${c.title}. ${c.publisher}, ${c.date}.` : id; }
+const cites = (ids) => (ids || []).map((id) => h('span', { class: 'cite', title: citeTitle(id) }, citeLabel(id)));
+const conf = (c) => h('span', { class: 'tag ' + c }, c);
+const fieldNote = (k) => (S.data.meta.fields && S.data.meta.fields[k]) || '';
+function summaryLine(r) {
+  const place = (TaTemplate.PLACE && TaTemplate.PLACE[r.accommodation_type]) || r.accommodation;
+  return `${cap(r.household_type)}, ${r.household_size} ${plural(r.household_size, 'person', 'people')}, in temporary accommodation for ${r.weeks_in_ta} ${plural(r.weeks_in_ta, 'week', 'weeks')}, now in ${place}` +
+    (r.placed_in_another_district ? ', placed outside the council’s district.' : '.');
+}
+function factsGrid(r) {
+  const fact = (k, v, s) => h('div', { class: 'fact' }, h('span', { class: 'k' }, k), h('span', { class: 'v' }, v), s ? h('span', { class: 's' }, s) : null);
+  return h('div', { class: 'facts' },
+    fact('Household', cap(r.household_type), `${r.adults} ${plural(r.adults, 'adult', 'adults')}, ${r.children} ${plural(r.children, 'child', 'children')}`),
+    fact('Accommodation', TYPE_LABEL[r.accommodation_type] || r.accommodation, r.placed_in_another_district ? 'In another council’s district' : 'In the council’s own district'),
+    fact('Weeks in TA', String(r.weeks_in_ta), fieldNote('weeks_in_ta')),
+    fact('Weekly cost band', r.weekly_cost_band, fieldNote('weekly_cost_band')),
+    fact('Priority need', cap(r.priority_need), fieldNote('priority_need')),
+    fact('Support needs', r.support_needs.length ? cap(r.support_needs.join('; ')) : 'None listed', `${r.support_needs.length} listed`),
+    fact('Local connection', r.local_connection ? 'Yes' : 'No', fieldNote('local_connection')));
+}
+async function assign(r, who, quiet) {
+  if (!canWrite()) return;
+  const F = S.files.get(r.id), before = (F && F.assignee) || null;
+  try {
+    await upsert('files', r.id, { household_id: r.id, assignee: who, assigned_at: nowIso() });
+    await audit(who ? 'assigned' : 'unassigned', r.id, '');
+    if (!quiet) say(who === myId() ? 'You have this household.' : who ? 'Household assigned.' : 'Household released.', { label: 'Undo', run: () => assign(r, before, true) });
+  } catch (e) { writeFailed(e, 'the assignment'); }
+}
+// The household's place in the list it was opened from, with the previous and next a key away.
+function listNav(r) {
+  const p = S.preset || 'all', list = orderedRecords(p), i = list.findIndex((x) => x.id === r.id);
+  return h('div', { class: 'pane-nav' },
+    h('button', { class: 'btn quiet back', onclick: () => backToList() }, `‹ ${PRESETS[p]} (${list.length})`),
+    h('span', { class: 'spacer' }),
+    i >= 0 ? h('span', { class: 'muted small' }, `${i + 1} of ${list.length}`) : h('span', { class: 'muted small' }, 'Not in this list now'),
+    h('button', { class: 'btn quiet small step', 'aria-label': 'Previous household (k)', title: 'Previous household (k)', disabled: i <= 0, onclick: () => stepRecord(-1) }, '↑'),
+    h('button', { class: 'btn quiet small step', 'aria-label': 'Next household (j)', title: 'Next household (j)', disabled: i < 0 || i >= list.length - 1, onclick: () => stepRecord(1) }, '↓'));
+}
+function checkCounts(r) {
+  const st = (S.checks.get(r.id) || {}).items || {};
+  let total = 0, done = 0;
+  for (const [, ids] of checkGroups(r)) for (const id of ids) { total++; if ((st[id] || {}).state && st[id].state !== 'open') done++; }
+  return { done, total };
+}
+// The plan's approval trail in one line per step, from the records: who saved the version shown,
+// and who returned, approved or rejected it.
+function trailFor(r, w) {
+  const v = currentVersion(r.id), D = w.decision;
+  const out = [];
+  if (!v) out.push(['todo', 'No plan yet']);
+  else out.push(['done', `Saved by ${person(v.author).name}, ${stamp(v.created_at)}`]);
+  if (w.state === 'drafting') out.push(['todo', 'Not yet sent to a second officer']);
+  if (w.state === 'submitted') out.push(['now', `Sent for approval${w.by ? ' by ' + person(w.by).name : ''}${w.at ? ', ' + stamp(w.at) : ''}; a second officer decides`]);
+  if (w.state === 'returned' && D) out.push(['back', `Sent back by ${person(D.author).name}, ${stamp(D.decided_at)}`]);
+  if (w.state === 'approved' && D) out.push(['done', `Signed off by ${person(D.author).name}, ${stamp(D.decided_at)}; the plan is locked`]);
+  if (w.state === 'rejected' && D) out.push(['back', `Turned down by ${person(D.author).name}, ${stamp(D.decided_at)}`]);
+  return out;
+}
+function fileHead(r, w) {
+  const F = S.files.get(r.id), who = F && F.assignee;
+  const v = currentVersion(r.id);
+  resolvePeople([who, v && v.author, w.by, w.decision && w.decision.author].filter(Boolean));
+  const cc = checkCounts(r), supports = r.support_needs.length, routes = r.eligible_pathways.length;
+  const chips = [
+    h('span', { class: 'fchip' }, `${r.weeks_in_ta} ${plural(r.weeks_in_ta, 'week', 'weeks')} in TA`),
+    ...flagsOf(r).map((c) => h('span', { class: 'fchip warn' }, CHECK_LABEL[c] || c)),
+    h('span', { class: 'fchip' }, `${supports} support ${plural(supports, 'need', 'needs')}`),
+    h('span', { class: 'fchip' }, `${routes} ${plural(routes, 'route', 'routes')} out`),
+    h('span', { class: 'fchip' }, `Checks ${cc.done} of ${cc.total}`),
+  ];
+  return h('div', { class: 'file-head' },
+    listNav(r),
+    h('div', { class: 'rec-line' }, h('span', { class: 'rec-id' }, r.id), h('span', { class: 'syn-tag' }, 'Synthetic record'), stChip(w.state), selfChip(w)),
+    h('h1', { class: 'h1' }, `${cap(r.household_type)} · ${TYPE_LABEL[r.accommodation_type] || r.accommodation}`),
+    h('div', { class: 'fchips' }, chips),
+    h('ol', { class: 'trail', 'aria-label': 'Where the plan stands' }, trailFor(r, w).map(([k, t]) => h('li', { class: 'trail-' + k }, t))),
+    h('div', { class: 'row' }, who ? whoLine(who, h('span', { class: 'muted' }, 'has this household')) : h('span', { class: 'muted' }, 'Nobody has taken this household yet.')),
+    fileActions(r, w));
+}
+function contextPanel(r) {
+  const card = h('div', { class: 'card' }, h('div', { class: 'card-head' }, h('h2', { class: 'h2' }, 'What legislation and guidance say for this record (a selection)')),
+    h('p', { class: 'note' }, 'Worked out by tamarket/moveon.py from the record. Suggestions for an officer to approve, never decisions.'));
+  for (const p of r.eligible_pathways) {
+    const meta = S.moveon.pathways[p.pathway_id] || { title: p.pathway_id, summary: '' };
+    const reasons = p.reasons.filter((id) => id !== p.pathway_id + '.when').map(textOf);
+    add(card, h('section', { class: 'ctx' },
+      h('h3', { class: 'ctx-title' }, meta.title),
+      h('p', { class: 'small' }, meta.summary),
+      h('p', { class: 'why' }, 'Listed because: ' + textOf(p.pathway_id + '.when').text),
+      h('ul', { class: 'claims' }, reasons.map((t) => h('li', null, h('span', null, t.text), h('span', { class: 'meta' }, conf(t.confidence), cites(t.citations))))),
+      h('p', { class: 'why' }, `${p.officer_checks.length} officer ${plural(p.officer_checks.length, 'check', 'checks')} for this pathway, in Checks.`)));
+  }
+  const used = new Set();
+  for (const id of [...S.moveon.general_checks, ...r.suitability_checks, ...r.eligible_pathways.flatMap((p) => [...p.reasons, ...p.officer_checks])]) for (const c of textOf(id).citations) used.add(c);
+  add(card, h('details', { class: 'given' }, h('summary', null, `Sources for this record (${used.size})`),
+    h('ul', { class: 'plain small' }, [...used].map((id) => { const c = S.moveon.citations[id]; return h('li', null, c ? `${c.title}. ${c.publisher}, ${c.date}.` : id); }))));
+  return card;
+}
+function checkGroups(r) {
+  const groups = [['Before any step', S.moveon.general_checks], ['Suitability of the current placement', r.suitability_checks]];
+  for (const p of r.eligible_pathways) groups.push([pathwayTitle(p.pathway_id), p.officer_checks]);
+  return groups;
+}
+async function setCheck(r, id, state) {
+  if (!canWrite()) return;
+  try {
+    await upsert('checks', r.id, { household_id: r.id, items: { [id]: { state, by: myId(), at: nowIso() } } });
+    await audit('check_updated', r.id, `${id}: ${state === 'done' ? 'checked' : state === 'na' ? 'not applicable' : 'open'}`);
+  } catch (e) { writeFailed(e, 'the check'); }
+}
+function checksPanel(r, w) {
+  const st = (S.checks.get(r.id) || {}).items || {};
+  const locked = !canWrite() || w.state === 'rejected';
+  let total = 0, done = 0;
+  const who = [];
+  const groups = checkGroups(r).map(([title, ids]) => h('section', { class: 'cgroup' }, h('h3', { class: 'h3' }, title), ids.map((id) => {
+    const t = textOf(id), c = st[id] || {}, state = c.state || 'open';
+    total++; if (state !== 'open') done++;
+    if (c.by) who.push(c.by);
+    const seg = h('div', { class: 'seg', role: 'group', 'aria-label': `State of the check: ${t.text.split(/[:;(]/)[0].slice(0, 90).trim()}` },
+      [['open', 'Open'], ['done', 'Checked'], ['na', 'Not applicable']].map(([k, label]) => h('button', { 'aria-pressed': String(state === k), disabled: locked, onclick: () => { if (state !== k) setCheck(r, id, k); } }, label)));
+    return h('div', { class: 'check' },
+      h('div', null, h('div', { class: 'q' }, t.text), t.when ? h('div', { class: 'why' }, 'Raised because: ' + t.when) : null,
+        h('div', { class: 'meta' }, conf(t.confidence), cites(t.citations)),
+        c.by ? h('div', { class: 'why' }, `${state === 'done' ? 'Checked' : state === 'na' ? 'Not applicable' : 'Reopened'} by ${person(c.by).name}, ${stamp(c.at)}`) : null),
+      seg);
+  })));
+  resolvePeople(who);
+  return h('div', { class: 'card', id: 'checks-panel' },
+    h('div', { class: 'card-head' }, h('h2', { class: 'h2' }, 'Checks'), h('span', { class: 'muted small' }, `${done} of ${total} worked through`)),
+    h('p', { class: 'note' }, 'The checks this planner takes from legislation and guidance for this record, word for word with their sources. Not a complete list: the officer applies the full code. Mark each one as it is done; the plan pack records who and when.'),
+    groups);
+}
+// Open the progress form for a household, from the panel or from the file's next step.
+function startProgress(r) {
+  const u = uiFor(r.id), M = S.moves.get(r.id) || null;
+  if (!u.progress) u.progress = { stage: (M && M.stage) || 'referral', pathway_id: (M && M.pathway_id) || '', note: '' };
+  openSection('sec-progress');
+  refresh();
+  // refresh() draws on the next frame; focus the stage once it has.
+  requestAnimationFrame(() => requestAnimationFrame(() => { const sel = document.querySelector('#progress-panel select') || document.querySelector('#sec-progress .sec-toggle'); if (sel) sel.focus(); }));
+}
+function progressPanel(r, w) {
+  const u = uiFor(r.id), M = S.moves.get(r.id) || null;
+  const card = h('div', { class: 'card', id: 'progress-panel', dataset: { mode: u.progress ? 'edit' : 'view', hid: r.id } },
+    h('div', { class: 'card-head' }, h('h2', { class: 'h2' }, 'Progress')));
+  if (w.state !== 'approved') { add(card, h('p', { class: 'note' }, 'Progress is recorded against an approved plan.')); return card; }
+  if (M && M.updated_by) resolvePeople([M.updated_by]);
+  add(card, M && M.stage ? h('div', { class: 'decision' }, h('b', null, STAGE_LABEL[M.stage] || M.stage),
+    h('span', null, `${M.pathway_id ? pathwayTitle(M.pathway_id) + '. ' : ''}Recorded by ${person(M.updated_by).name}, ${stamp(M.updated_at)}.`), M.note ? h('span', null, M.note) : null)
+    : h('p', { class: 'note' }, 'Nothing recorded yet.'));
+  if (!u.progress) {
+    if (canWrite()) add(card, h('div', { class: 'row' }, h('button', { class: 'btn', onclick: () => startProgress(r) }, 'Record progress')));
+    return card;
+  }
+  const P = u.progress, msg = h('div', { 'aria-live': 'polite' });
+  const save = h('button', { class: 'btn primary' }, 'Save progress');
+  const check = () => { const n = screenNote(P.note); swap(msg, n.problems.length ? problemsBox('Fix the note first.', n.problems) : h('span')); save.disabled = n.problems.length > 0 || P.note.length > 300; return n; };
+  save.addEventListener('click', async () => {
+    const n = check();
+    if (save.disabled || !canWrite()) return;
+    save.disabled = true;
+    try {
+      await upsert('moves', r.id, { household_id: r.id, stage: P.stage, pathway_id: P.pathway_id || null, note: n.text, plan_version: (w.decision && w.decision.version_id) || null, updated_by: myId(), updated_at: nowIso() });
+      await audit('progress_updated', r.id, STAGE_LABEL[P.stage] + (P.pathway_id ? ', ' + (PATHWAY_SHORT[P.pathway_id] || P.pathway_id) : ''));
+      u.progress = null;
+    } catch (e) { writeFailed(e, 'the progress'); }
+    refresh();
+  });
+  const ta = h('textarea', { rows: 2, 'aria-label': 'Progress note', placeholder: 'Optional. No names, addresses or phone numbers.', oninput: (e) => { P.note = e.target.value; check(); } });
+  ta.value = P.note;
+  add(card, h('div', { class: 'inline-confirm' },
+    h('label', { class: 'field' }, 'Stage', h('select', { onchange: (e) => { P.stage = e.target.value; } }, STAGES.map(([k, l]) => h('option', { value: k, selected: P.stage === k }, l)))),
+    h('label', { class: 'field' }, 'Pathway', h('select', { onchange: (e) => { P.pathway_id = e.target.value; } },
+      h('option', { value: '', selected: !P.pathway_id }, 'Not about one pathway'), r.eligible_pathways.map((p) => h('option', { value: p.pathway_id, selected: P.pathway_id === p.pathway_id }, pathwayTitle(p.pathway_id))))),
+    h('label', { class: 'field' }, 'Note (300 characters at most)', ta), msg,
+    h('div', { class: 'row' }, save, h('button', { class: 'btn', onclick: () => { u.progress = null; refresh(); } }, 'Cancel'))));
+  setTimeout(check, 0);
+  return card;
+}
+function activityPanel(r) {
+  const evs = S.audit.filter((e) => e.household_id === r.id).slice(0, 40);
+  resolvePeople(evs.map((e) => e.author));
+  return h('div', { class: 'card' }, h('div', { class: 'card-head' }, h('h2', { class: 'h2' }, 'Activity')),
+    evs.length ? h('ul', { class: 'timeline' }, evs.map((e) => {
+      const p = person(e.author);
+      return h('li', null, p.avatar ? h('img', { src: p.avatar, alt: '' }) : h('span', { class: 'avatar-blank' }),
+        h('div', null, h('div', null, h('b', null, p.name), ' ', ACTION_LABEL[e.action] || e.action, e.detail ? h('span', { class: 'muted' }, ` (${e.detail})`) : null), h('div', { class: 'when' }, stamp(e.at))));
+    })) : h('p', { class: 'note' }, 'No activity on this household yet.'));
+}
+// The plan panel is being typed in: an editor open on an unlocked plan, or a return or reject note.
+function planEditing(u, w) {
+  const locked = ['approved', 'rejected', 'submitted'].includes(w.state);
+  return (!!u.working && u.mode === 'edit' && !u.busy && !locked) || (!!u.confirm && w.state === 'submitted' && canApprove());
+}
+function drawFile() {
+  const r = S.byId.get(S.fileId), v = $('#view-file');
+  if (!r) { swap(v, h('p', { class: 'note' }, 'There is no such record in this caseload.')); return; }
+  const w = workflowOf(r.id), u = uiFor(r.id);
+  if (v.dataset.hid !== r.id) {
+    v.dataset.hid = r.id;
+    swap(v, h('div', { id: 'f-head' }), h('div', { id: 'f-bar' }),
+      h('div', { class: 'rec' },
+        h('div', { class: 'rec-main' },
+          section('sec-household', 'The household', `${cap(r.household_type)} · ${r.weeks_in_ta} ${plural(r.weeks_in_ta, 'week', 'weeks')} in TA`, factsGrid(r)),
+          section('sec-plan', 'Move-forward plan', null, h('div', { id: 'slot-plan' })),
+          section('sec-progress', 'Progress', null, h('div', { id: 'slot-progress' })),
+          section('sec-checks', 'Checks', null, h('div', { id: 'slot-checks' })),
+          section('sec-clocks', 'Notices and clocks', null, h('div', null, h('div', { id: 'slot-notices' }), h('h3', { class: 'ctx-title' }, 'Reviews'), h('div', { id: 'slot-reviews' }))),
+          section('sec-handover', 'Handover summary', null, h('div', { id: 'slot-handover' })),
+          section('sec-context', 'Routes out and what the law says', `${r.eligible_pathways.length} ${plural(r.eligible_pathways.length, 'route', 'routes')}`, h('div', { id: 'slot-context' }, contextPanel(r)))),
+        h('aside', { class: 'rec-rail', 'aria-label': 'About this household' },
+          h('div', { id: 'slot-props' }), h('div', { id: 'slot-tasks' }), h('div', { id: 'slot-monitor' }), h('div', { id: 'slot-refs' }), h('div', { id: 'slot-addons' }), h('div', { id: 'slot-activity' }))));
+  }
+  swap($('#f-head'), fileHead(r, w));
+  if (window.FdShell && FdShell.sectionBar) swap($('#f-bar'), FdShell.sectionBar(`${r.id} · ${cap(r.household_type)}`, [stChip(w.state)],
+    [['Household', '#sec-household'], ['Plan', '#sec-plan'], ['Progress', '#sec-progress'], ['Checks', '#sec-checks'], ['Clocks', '#sec-clocks'], ['Handover', '#sec-handover'], ['Routes out', '#sec-context'], ['Follow-ups', '#slot-tasks'], ['Activity', '#slot-activity']].map(([label, target]) => ({ label, target }))));
+  // A panel a person is typing in is left alone when the shared store updates.
+  const planSlot = $('#slot-plan'), cur = planSlot.firstElementChild;
+  // An open editor or note form stays until the person closes it, even if the plan moves on
+  // meanwhile: their typing is not thrown away, and saving re-checks the state.
+  const open = ((u.working && u.mode === 'edit' && !u.busy) || !!u.confirm) && cur && cur.dataset.mode === 'edit' && cur.dataset.hid === r.id;
+  if (!open) swap(planSlot, Plan.panel(r, w));
+  const progSlot = $('#slot-progress'), pcur = progSlot.firstElementChild;
+  if (!(u.progress && pcur && pcur.dataset.mode === 'edit' && pcur.dataset.hid === r.id)) swap(progSlot, progressPanel(r, w));
+  swap($('#slot-checks'), checksPanel(r, w));
+  // A clock form someone is filling in is left alone when the store updates.
+  const busyIn = (id) => { const s = $('#' + id), ae = document.activeElement; return s && s.contains(ae) && ae.matches('input, select, textarea'); };
+  if (!busyIn('slot-notices')) swap($('#slot-notices'), noticesPanel(r));
+  if (!busyIn('slot-reviews')) swap($('#slot-reviews'), reviewsPanel(r));
+  if (!busyIn('slot-handover')) swap($('#slot-handover'), handoverPanel(r));
+  swap($('#slot-activity'), activityPanel(r));
+  swap($('#slot-props'), propertiesCard(r, w));
+  swap($('#slot-monitor'), monitoringCard(r));
+  swap($('#slot-refs'), referencesCard());
+  drawTaskSlots(r);
+  const cc = checkCounts(r), sm = (id, t) => { const m = $(`#${id} .sec-head .sec-meta`); if (m) m.textContent = t; else { const b = $(`#${id} .sec-toggle`); if (b) b.append(h('span', { class: 'sec-meta' }, t)); } };
+  sm('sec-clocks', clocksReady() ? clocksMeta(r) : 'not available'); sm('sec-handover', 'for an officer taking over');
+  sm('sec-plan', STATE_LABEL[w.state] || w.state); sm('sec-checks', `${cc.done} of ${cc.total} worked through`);
+  const M = S.moves.get(r.id); sm('sec-progress', M && M.stage ? STAGE_LABEL[M.stage] || M.stage : (w.state === 'approved' ? 'nothing recorded' : 'after approval'));
+}
+
+/* ============================================================== plans */
+const SOURCE_LABEL = { claude: 'drafted by Claude', template: 'from the template', edited: 'edited' };
+// What an edited version started from, after "edited from".
+const FROM_LABEL = { claude: 'a Claude draft', template: 'the template', edited: 'an edited version' };
+const Plan = (() => {
+  const UNAVAILABLE = ['not_granted', 'sampling_disabled', 'not_declared', 'capability_disabled', 'capability_removed'];
+  const promptFor = (r, review, lessons) => TaPrompt.fillPrompt(r, S.moveon, S.spec.prompt, S.spec.schema, review || [], Lessons.forPrompt(lessons, r));
+  const verNo = (r, b) => versionsFor(r.id).findIndex((x) => x.key === b.key) + 1;
+
+  /* ---------- drafting with Claude ---------- */
+  async function draftWithClaude(r, fresh) {
+    const u = uiFor(r.id);
+    if (u.busy || !S.caps.sample || !S.spec.prompt || !canWrite()) return;
+    let text;
+    const nt = notesFor(r), lessons = Lessons.snapshot(r);
+    try { text = promptFor(r, nt.usable, lessons); } catch (e) { u.msg = 'The prompt could not be built for this record.'; refresh(); return; }
+    u.busy = true; u.problems = null; u.msg = ''; u.ctl = new AbortController();
+    refresh();
+    const opts = { signal: u.ctl.signal, modelTier: 'default', onText: ({ text: t }) => { const el = document.getElementById('draft-progress'); if (el) el.textContent = `Writing, ${t.length.toLocaleString('en-GB')} characters so far`; } };
+    if (fresh) opts.cache = false;
+    try {
+      const res = await S.caps.sample(text, opts);
+      const parsed = res && res.truncated ? { ok: false, problem: { path: '(reply)', rule: 'reply', detail: 'the reply was cut off' } } : TaPrompt.parseReply(res && res.text);
+      const scr = parsed.ok ? screen(parsed.plan, r, nt.usable) : { passed: false, problems: [parsed.problem] };
+      if (scr.passed) {
+        u.working = { plan: scr.plan, source: 'claude', prompt_sha256: await sha256(text), review: nt.usable, lessons }; u.mode = 'view';
+        await keepPrivate(r, u.working);
+        await audit('draft_created', r.id, 'passed the screen' + (nt.usable.length ? `, answering ${nt.usable.length} reviewer ${plural(nt.usable.length, 'note', 'notes')}` : '') + (lessons.length ? `, with ${lessons.length} ${plural(lessons.length, 'lesson', 'lessons')}` : ''));
+      } else {
+        u.problems = scr.problems; u.working = null;
+        await audit('draft_failed_screen', r.id, `${scr.problems.length} ${plural(scr.problems.length, 'problem', 'problems')}: ${[...new Set(scr.problems.map((p) => p.rule))].join(', ')}`);
+      }
+    } catch (e) {
+      const code = e && e.code;
+      u.msg = code === 'cancelled' ? 'Stopped.'
+        : UNAVAILABLE.includes(code) ? 'Claude drafting is not available in this view. Start from the template instead.'
+          : code === 'rate_limited' ? 'Claude is busy or a usage limit was reached. Try again in a few minutes, or start from the template.'
+            : code === 'refused' ? 'Claude declined to draft this plan. Start from the template instead.'
+              : code === 'session_expired' ? 'Sign in to Claude again, then retry.'
+                : code === 'prompt_too_large' ? 'The prompt for this record is too long to send. Start from the template instead.'
+                  : code === 'note_blocked' ? 'A reviewer’s note could not be sent to Claude. Start from the template, which shows the notes to answer.'
+                  : 'The draft did not arrive. Try again.';
+      if (UNAVAILABLE.includes(code)) S.caps.sample = null;
+    } finally { u.busy = false; u.ctl = null; refresh(); }
+  }
+
+  // An unsaved, screened draft is kept in the viewer's own private space, so leaving the page
+  // does not lose it. Nobody else, the owner included, can read it.
+  const privKey = (r) => 'draft_' + r.id;
+  async function keepPrivate(r, working) {
+    if (!S.store || S.store.kind !== 'db' || !S.me.id) return;
+    try { await S.store.set('data/users/' + S.me.id, privKey(r), { household_id: r.id, working, at: nowIso() }); } catch { /* a convenience */ }
+  }
+  async function loadPrivate(r) {
+    if (!S.store || S.store.kind !== 'db' || !S.me.id) return null;
+    try { const d = await S.store.get('data/users/' + S.me.id, privKey(r)); return d && d.working ? d.working : null; } catch { return null; }
+  }
+  async function dropPrivate(r) {
+    if (!S.store || S.store.kind !== 'db' || !S.me.id) return;
+    try { await S.store.set('data/users/' + S.me.id, privKey(r), { household_id: r.id, working: null, at: nowIso() }); } catch { /* ignore */ }
+  }
+
+  /* ---------- workflow ---------- */
+  const stale = (r, text) => {
+    const u = uiFor(r.id);
+    u.msg = text || 'The plan changed while you were looking at it. Check it again.'; u.confirm = null; u.note = ''; u.reason = '';
+    refresh();
+  };
+  async function saveDraft(r) {
+    const u = uiFor(r.id);
+    if (!u.working || !canWrite()) return;
+    if (['submitted', 'approved', 'rejected'].includes(workflowOf(r.id).state)) return stale(r, 'The plan is awaiting approval or decided, so a new version cannot be saved now. Ask an editor to return or reopen it.');
+    // A version answers the notes current when it is saved, and keeps them, so it is always
+    // screened against the notes it answered.
+    const cur = notesFor(r).usable;
+    if (!sameNotes(u.working.review, cur)) {
+      u.working = Object.assign({}, u.working, { plan: withAnswers(u.working.plan, cur, u.working.review), review: cur });
+      u.mode = 'edit'; u.msg = 'The reviewer’s notes changed since this draft was made. Answer them, then save.';
+      refresh(); return;
+    }
+    const scr = screen(u.working.plan, r, cur);
+    if (!scr.passed) { u.problems = scr.problems; refresh(); return; }
+    const plan = scr.plan, id = newId(r.id), at = nowIso();
+    const version = versionsFor(r.id).length + 1;
+    const lessons = u.working.lessons || [];
+    const doc = { household_id: r.id, version, source: u.working.source, from: u.working.from || null, plan,
+      screen: { passed: true, spec_version: S.spec.rules.spec_version, checked_at: at }, sha256: await sha256(canon(plan)),
+      prompt_sha256: u.working.prompt_sha256 || null, review: cur, lessons, created_at: at };
+    try {
+      await ensureMember();
+      await S.store.set(ownColl('versions', myId()), id, doc);
+      await upsert('files', r.id, { household_id: r.id, status: 'drafting', version_id: `${myId()}/${id}`, updated_at: nowIso(), updated_by: myId() });
+      await audit('plan_saved', r.id, `version ${version}, ${SOURCE_LABEL[u.working.source] || u.working.source}${u.working.from && u.working.source === 'edited' ? ' from ' + (FROM_LABEL[u.working.from] || u.working.from) : ''}${lessons.length ? `, ${lessons.length} ${plural(lessons.length, 'lesson', 'lessons')} recalled` : ''}`);
+      u.working = null; u.problems = null; u.mode = 'view'; u.msg = '';
+      await dropPrivate(r);
+    } catch (e) { writeFailed(e, 'the plan'); }
+    refresh();
+  }
+  async function submit(r, b) {
+    if (!canWrite() || !b) return;
+    if (!['new', 'drafting', 'returned'].includes(workflowOf(r.id).state)) return stale(r);
+    if (!screen(b.plan, r, b.review).passed) return stale(r, 'This version no longer passes the screen. Draft a new version.');
+    if (!covers(b.review, notesFor(r).usable)) return stale(r, 'This version was saved before the reviewer’s latest note. Save a new version that answers it, then submit it.');
+    try {
+      await upsert('files', r.id, { household_id: r.id, status: 'submitted', version_id: b.key, updated_at: nowIso(), updated_by: myId() });
+      await audit('plan_submitted', r.id, `version ${verNo(r, b)}`);
+      Timing.end('plan', r.id);
+      say('Submitted for approval. A second officer decides.');
+    } catch (e) { writeFailed(e, 'the submission'); }
+  }
+  async function decide(r, b, decision, extra) {
+    if (!canApprove()) return;
+    const w = workflowOf(r.id), F = S.files.get(r.id);
+    if (!(decision === 'reopened' ? ['approved', 'rejected'] : ['submitted']).includes(w.state)) return stale(r);
+    if (decision !== 'reopened' && (!b || !F || F.version_id !== b.key)) return stale(r);
+    const fourEyes = S.workflow.four_eyes !== false;
+    if (decision === 'approved') {
+      if (fourEyes && b.author === myId()) return;
+      if ((await sha256(canon(b.plan))) !== b.sha256 || !screen(b.plan, r, b.review).passed) return stale(r, 'This version does not match its saved fingerprint or no longer passes the screen, so it cannot be approved.');
+      if (!covers(b.review, notesFor(r).usable)) return stale(r, 'This version does not answer the reviewer’s latest note, so it cannot be approved. Return it with a note, or reject it.');
+    }
+    const doc = Object.assign({ household_id: r.id, decision, version_id: b ? b.key : null, plan_sha256: b ? b.sha256 : null, four_eyes: fourEyes, decided_at: nowIso() }, extra || {});
+    // A return can keep its note as a lesson for later plans, if the memory core admits it.
+    let refused = null;
+    if (decision === 'returned' && doc.keep_lesson && doc.note) {
+      const scope = Lessons.scopeOf(doc.keep_lesson, r, doc.lesson_pathway);
+      const adm = Lessons.admission(scope, doc.note);
+      if (adm.status === 'rejected') refused = adm.why;
+      else doc.lesson = { scope, sha256: await Lessons.sha(scope, doc.note), memory_rules: S.memRules.version };
+    }
+    delete doc.keep_lesson; delete doc.lesson_pathway;
+    try {
+      await ensureMember();
+      await S.store.set(ownColl('decisions', myId()), newId(r.id), doc);
+      const action = { approved: 'plan_approved', returned: 'plan_returned', rejected: 'plan_rejected', reopened: 'reopened' }[decision];
+      const detail = decision === 'approved' ? `version ${verNo(r, b)}, four-eyes ${fourEyes ? 'on' : 'off'}`
+        : decision === 'rejected' ? ((REJECT_REASONS.find((x) => x[0] === doc.reason) || [])[1] || '')
+          : decision === 'returned' ? 'with a note' : '';
+      await audit(action, r.id, detail);
+      say(DECIDED[decision] || 'Saved.');
+      if (doc.lesson) await audit('lesson_proposed', r.id, `for ${Lessons.scopeWords(doc.lesson.scope)}; waits for a second officer`);
+      if (refused) { await audit('lesson_not_kept', r.id, refused.join('; ')); banner('lesson', 'warn', `The plan was returned, but the note was not kept as a lesson: ${refused.join('; ')}.`); }
+    } catch (e) { writeFailed(e, 'the decision'); }
+    const u = uiFor(r.id); u.confirm = null; u.note = ''; u.reason = ''; u.keepLesson = false; refresh();
+  }
+
+  /* ---------- plan pack ---------- */
+  async function planPack(r, b, kind) {
+    if (!S.caps.downloads || !b) return;
+    const w = workflowOf(r.id), Dn = w.decision || {}, st = (S.checks.get(r.id) || {}).items || {}, M = S.moves.get(r.id) || null;
+    const evs = S.audit.filter((e) => e.household_id === r.id).slice().sort(byTime('at'));
+    await resolvePeople([Dn.author, b.author, M && M.updated_by, ...evs.map((e) => e.author), ...Object.values(st).map((c) => c.by)].filter(Boolean));
+    const verified = (await sha256(canon(b.plan))) === b.sha256 && b.sha256 === Dn.plan_sha256;
+    const p = b.plan, m = S.manifest;
+    const checks = checkGroups(r).flatMap(([group, ids]) => ids.map((id) => ({ group, id, text: textOf(id).text, state: (st[id] || {}).state || 'open', by: (st[id] || {}).by || null, at: (st[id] || {}).at || null })));
+    const used = new Set(checks.flatMap((c) => textOf(c.id).citations));
+    const cut = S.auditCapped ? 'The audit trail below may be incomplete: the planner holds the latest 1,000 entries per person.' : '';
+    let out, name;
+    if (kind === 'json') {
+      out = JSON.stringify({
+        record_id: r.id, synthetic: true, notice: S.data.meta.notice, status_line: STATUS_LINE,
+        decision: { decision: Dn.decision || null, at: Dn.decided_at || null, by: Dn.author ? nameFor(Dn.author) : null, four_eyes: Dn.four_eyes !== false, approved_by_author: !!(Dn.author && Dn.author === b.author), plan_sha256: Dn.plan_sha256 || null, hash_verified: verified },
+        version: { id: b.key, number: verNo(r, b), source: b.source, from: b.from || null, saved_at: b.created_at, saved_by: nameFor(b.author), sha256: b.sha256, prompt_sha256: b.prompt_sha256 || null, plan: p, review_notes: b.review || [],
+          lessons: (b.lessons || []).map((l) => ({ id: l.id, applies_to: Lessons.scopeWords(l.scope), text: l.text, kept_by: nameFor(l.proposed_by), approved_by: nameFor(l.approved_by), approved_at: l.approved_at, reason: l.reason, sha256: l.sha256 })) },
+        record: TaPrompt.bareRecord(r),
+        suggestions: { eligible_pathways: r.eligible_pathways, suitability_checks: r.suitability_checks, general_checks: S.moveon.general_checks },
+        checks: checks.map((c) => Object.assign({}, c, { by: c.by ? nameFor(c.by) : null })),
+        progress: M ? { stage: M.stage, pathway_id: M.pathway_id || null, note: M.note || '', at: M.updated_at, by: nameFor(M.updated_by) } : null,
+        audit: evs.map((e) => ({ at: e.at, by: nameFor(e.author), action: ACTION_LABEL[e.action] || e.action, detail: e.detail })),
+        audit_note: cut || null,
+        sources: [...used].map((id) => Object.assign({ id }, S.moveon.citations[id] || {})),
+        provenance: { source_commit: m.source_commit, source_dirty: !!m.source_dirty, spec_version: m.spec_version, files: m.files },
+        licence: { line: OGL_LINE, url: LICENCE_URL },
+      }, null, 1) + '\n';
+      name = `${r.id}-plan.json`;
+    } else {
+      const L = [`# Move-forward plan pack: ${r.id} (synthetic record)`, '', S.data.meta.notice, '',
+        `**Plan:** ${Dn.decision || 'not decided'}${Dn.decided_at ? ` on ${stamp(Dn.decided_at)} by ${nameFor(Dn.author)}` : ''}. Four-eyes: ${Dn.four_eyes === false ? 'off' : 'on'}${Dn.author && Dn.author === b.author ? '; approved by the person who saved the plan' : ''}.`,
+        `**Version:** ${verNo(r, b)}, saved ${stamp(b.created_at)} by ${nameFor(b.author)}, ${SOURCE_LABEL[b.source] || b.source}, screened. SHA-256 ${b.sha256}: ${verified ? 'matches the approval record' : 'does not match the approval record'}.`, '',
+        `> ${STATUS_LINE} Each statutory decision (an offer, a referral, ending a duty) is made and recorded outside this planner.`, '',
+        '## The record', '', `- ${summaryLine(r)}`, `- Priority need: ${r.priority_need}`, `- Support needs: ${r.support_needs.length ? r.support_needs.join('; ') : 'none listed'}`,
+        `- Weekly cost band: ${r.weekly_cost_band}`, `- Local connection: ${r.local_connection ? 'yes' : 'no'}`, '',
+        '## The plan', '', p.summary.text + ` [${p.summary.confidence}]`, '',
+        ...(p.responds_to_review ? ['### Reviewer notes answered', '', ...p.responds_to_review.map((a) => { const n = (b.review || []).find((x) => x.id === a.note); return `- **${n ? `${noteKind(n)}: ${n.text}` : a.note}** ${a.change} [${a.confidence}]`; }), ''] : []),
+        ...((b.lessons || []).length ? ['### Lessons in front of the drafter', '', 'Data from earlier reviews, each approved by a second officer; never a fact or a rule.', '',
+          ...b.lessons.map((l) => `- ${l.id}, for ${Lessons.scopeWords(l.scope)}: ${l.text} Kept by ${nameFor(l.proposed_by)}; approved by ${nameFor(l.approved_by)}, ${stamp(l.approved_at)}: ${l.reason}. SHA-256 ${String(l.sha256 || '').slice(0, 16)}`), ''] : []),
+        '### Pathways to consider', '',
+        ...p.pathway_suggestions.map((s) => `- **${pathwayTitle(s.pathway_id)}**: ${s.why} [${s.confidence}]`), '', '### Next steps', '',
+        ...p.steps.map((s, i) => `${i + 1}. ${s.text} (${s.owner}) [${s.confidence}]`), '', '### Checks in the plan', ''];
+      for (const pid of [...new Set(p.officer_checks.map((c) => c.pathway_id))]) {
+        L.push(`**${pathwayTitle(pid)}**`, '', ...p.officer_checks.filter((c) => c.pathway_id === pid).map((c) => `- ${c.text} [${c.confidence}]`), '');
+      }
+      L.push('### Risks to the household', '', ...p.risks.map((x) => `- ${x.text} [${x.confidence}]`), '');
+      L.push('## Checks worked through', '');
+      for (const [group] of checkGroups(r)) {
+        L.push(`**${group}**`, '');
+        for (const c of checks.filter((x) => x.group === group)) L.push(`- [${c.state === 'done' ? 'x' : c.state === 'na' ? '-' : ' '}] ${c.text}${c.by ? ` (${c.state === 'done' ? 'checked' : c.state === 'na' ? 'not applicable' : 'open'}, ${nameFor(c.by)}, ${stamp(c.at)})` : ''}`);
+        L.push('');
+      }
+      L.push('## Progress', '', M && M.stage ? `${STAGE_LABEL[M.stage] || M.stage}${M.pathway_id ? ', ' + pathwayTitle(M.pathway_id) : ''}. Recorded by ${nameFor(M.updated_by)}, ${stamp(M.updated_at)}.${M.note ? ' ' + M.note : ''}` : 'Nothing recorded.', '');
+      L.push('## Audit trail', '', ...(cut ? [cut, ''] : []), '| When | Who | Action | Detail |', '|---|---|---|---|', ...evs.map((e) => `| ${stamp(e.at)} | ${mdCell(nameFor(e.author))} | ${ACTION_LABEL[e.action] || e.action} | ${mdCell(e.detail)} |`), '');
+      L.push('## Sources', '', ...[...used].map((id) => { const c = S.moveon.citations[id]; return c ? `- ${c.title}. ${c.publisher}, ${c.date}.` : `- ${id}`; }), '');
+      L.push('## Provenance', '', `Built from commit ${m.source_commit}. Spec version ${m.spec_version}. Files and their SHA-256:`, '', ...Object.entries(m.files).map(([k, v]) => `- ${k}: ${v}`), '');
+      L.push('---', '', `${OGL_LINE} ${LICENCE_URL}`, STATUS_LINE);
+      out = L.join('\n') + '\n'; name = `${r.id}-plan.md`;
+    }
+    try {
+      await S.caps.downloads.save({ filename: name, data: out });
+      await audit('pack_exported', r.id, kind === 'json' ? 'data (.json)' : 'plan pack (.md)');
+    } catch (e) { if (e && e.code !== 'declined') banner('dl', 'warn', 'The file could not be saved from this view.'); }
+  }
+
+  /* ---------- rendering ---------- */
+  // review: the notes the plan answers, so each answer shows under the note it answers.
+  function renderPlan(p, review) {
+    const groups = [...new Set(p.officer_checks.map((c) => c.pathway_id))];
+    return h('div', { class: 'plan' },
+      h('p', { class: 'plan-sum' }, p.summary.text, ' ', conf(p.summary.confidence)),
+      p.responds_to_review ? h('section', { class: 'answers' }, h('h3', { class: 'h3' }, 'Reviewer notes answered'), h('ul', { class: 'claims' }, p.responds_to_review.map((a) => {
+        const n = (review || []).find((x) => x.id === a.note);
+        return h('li', null, h('b', null, n ? `${noteKind(n)}: ${n.text}` : a.note), h('span', null, a.change), h('span', { class: 'meta' }, conf(a.confidence)));
+      }))) : null,
+      h('section', null, h('h3', { class: 'h3' }, 'Pathways to consider'), h('ul', { class: 'claims' }, p.pathway_suggestions.map((s) =>
+        h('li', null, h('b', null, pathwayTitle(s.pathway_id)), h('span', null, s.why), h('span', { class: 'meta' }, conf(s.confidence)))))),
+      h('section', null, h('h3', { class: 'h3' }, 'Next steps'), h('ol', { class: 'steps' }, p.steps.map((s) =>
+        h('li', null, h('span', null, s.text), h('span', { class: 'meta' }, h('span', { class: 'owner' }, s.owner), conf(s.confidence)))))),
+      h('section', null, h('h3', { class: 'h3' }, 'Checks in the plan'), groups.map((pid) => h('div', { class: 'pgroup' }, h('div', { class: 'pgroup-t' }, pathwayTitle(pid)),
+        h('ul', { class: 'claims' }, p.officer_checks.filter((c) => c.pathway_id === pid).map((c) => h('li', null, h('span', null, c.text), h('span', { class: 'meta' }, conf(c.confidence)))))))),
+      h('section', null, h('h3', { class: 'h3' }, 'Risks to the household'), h('ul', { class: 'claims' }, p.risks.map((x) => h('li', null, h('span', null, x.text), h('span', { class: 'meta' }, conf(x.confidence)))))),
+      h('p', { class: 'plan-foot' }, STATUS_LINE));
+  }
+  function editor(r) {
+    const u = uiFor(r.id), p = clone(u.working.plan);
+    const status = h('div', { 'aria-live': 'polite' });
+    const done = h('button', { class: 'btn primary' }, 'Done editing');
+    const check = () => {
+      const res = screen(p, r, u.working.review);
+      swap(status, res.passed ? h('div', { class: 'passed' }, 'Passes the screen.') : problemsBox('Not yet: fix these before saving.', res.problems));
+      done.disabled = !res.passed;
+      return res;
+    };
+    let timer = null;
+    const later = () => { clearTimeout(timer); timer = setTimeout(check, 250); };
+    const area = (obj, key, label) => { const ta = h('textarea', { rows: 3, 'aria-label': label, maxlength: '600', oninput: (e) => { obj[key] = e.target.value; later(); } }); ta.value = obj[key] || ''; return ta; };
+    const sel = (obj, key, label, opts) => h('select', { 'aria-label': label, onchange: (e) => { obj[key] = e.target.value; later(); } }, opts.map(([v, t]) => h('option', { value: v, selected: obj[key] === v }, t)));
+    const confSel = (obj, label) => sel(obj, 'confidence', label + ': confidence', CONFIDENCE.map((c) => [c, c]));
+    const eligible = r.eligible_pathways.map((x) => x.pathway_id);
+    function list(title, arr, min, max, row, fresh, note) {
+      const box = h('section', { class: 'editor' });
+      const draw = () => swap(box, h('h3', { class: 'h3' }, `${title} (${arr.length})`), note ? h('p', { class: 'note' }, note) : null,
+        arr.map((item, i) => row(item, i, arr.length > min ? () => { arr.splice(i, 1); draw(); later(); } : null)),
+        fresh && arr.length < max && fresh() ? h('button', { class: 'btn small', onclick: () => { arr.push(fresh()); draw(); later(); } }, 'Add') : null);
+      draw();
+      return box;
+    }
+    const removeBtn = (fn) => (fn ? h('button', { class: 'btn quiet small danger', onclick: fn }, 'Remove') : null);
+    // Each reviewer note's answer: empty while it is the placeholder, which the screen refuses.
+    const review = u.working.review || [], ph = S.spec.rules.review.placeholder;
+    const answerArea = (a, label) => {
+      const ta = h('textarea', { rows: 3, 'aria-label': label, maxlength: '600', placeholder: 'What this version changed because of the note, or why it could not change.',
+        oninput: (e) => { a.change = e.target.value.trim() ? e.target.value : ph; later(); } });
+      ta.value = a.change === ph ? '' : a.change || '';
+      return ta;
+    };
+    const answers = review.length ? h('section', { class: 'editor', id: 'review-answers' }, h('h3', { class: 'h3' }, `Reviewer notes (${review.length})`),
+      h('p', { class: 'note' }, 'Say what this version changed because of each note, or why it could not change. A figure or a name in a note is not allowed in the plan unless the record holds it.'),
+      review.map((n, i) => {
+        const a = (p.responds_to_review || []).find((x) => x.note === n.id);
+        return a ? h('div', { class: 'item-edit' }, h('b', null, `${noteKind(n)}: ${n.text}`), answerArea(a, `Answer to reviewer note ${i + 1}`), h('div', { class: 'row' }, confSel(a, `Answer to reviewer note ${i + 1}`))) : null;
+      })) : null;
+    const box = h('div', { class: 'editor' },
+      h('p', { class: 'note' }, 'Edit the wording, owners and confidences, or remove and add items. The screen checks every change: no decisions, no names, no figures that are not in the record. Pathways can only be those listed for this record.'),
+      answers,
+      h('section', { class: 'editor' }, h('h3', { class: 'h3' }, 'Summary'), h('div', { class: 'item-edit' }, area(p.summary, 'text', 'Summary'), h('div', { class: 'row' }, confSel(p.summary, 'Summary')))),
+      list('Pathways to consider', p.pathway_suggestions, 1, 3, (s, i, rm) => h('div', { class: 'item-edit' },
+        h('b', null, pathwayTitle(s.pathway_id)), area(s, 'why', `Why ${pathwayTitle(s.pathway_id)}`), h('div', { class: 'row' }, confSel(s, `Pathway ${i + 1}`), removeBtn(rm))),
+      () => { const left = eligible.filter((pid) => !p.pathway_suggestions.some((s) => s.pathway_id === pid)); return left.length ? { pathway_id: left[0], why: '', confidence: 'Likely' } : null; }),
+      list('Next steps', p.steps, 1, 12, (s, i, rm) => h('div', { class: 'item-edit' }, area(s, 'text', `Step ${i + 1}`),
+        h('div', { class: 'row' }, sel(s, 'owner', `Step ${i + 1}: owner`, OWNERS.map((o) => [o, o])), confSel(s, `Step ${i + 1}`), removeBtn(rm))),
+      () => ({ text: '', owner: 'officer', confidence: 'Likely' })),
+      list('Checks in the plan', p.officer_checks, 1, 20, (c, i, rm) => h('div', { class: 'item-edit' }, area(c, 'text', `Check ${i + 1}`),
+        h('div', { class: 'row' }, sel(c, 'pathway_id', `Check ${i + 1}: pathway`, [...eligible.map((pid) => [pid, PATHWAY_SHORT[pid] || pid]), ['general', 'General']]), confSel(c, `Check ${i + 1}`), removeBtn(rm))),
+      () => ({ text: '', pathway_id: 'general', confidence: 'Likely' }), 'Keep the legal references (for example s.193(7AA) or Code 17.35) when you shorten a check.'),
+      list('Risks to the household', p.risks, 1, 10, (x, i, rm) => h('div', { class: 'item-edit' }, area(x, 'text', `Risk ${i + 1}`), h('div', { class: 'row' }, confSel(x, `Risk ${i + 1}`), removeBtn(rm))),
+        () => ({ text: '', confidence: 'Likely' })),
+      status, h('div', { class: 'row' }, done, h('button', { class: 'btn', onclick: () => { u.mode = 'view'; refresh(); } }, 'Cancel')));
+    done.addEventListener('click', () => {
+      const res = check();
+      if (!res.passed) return;
+      u.working = { plan: res.plan, source: 'edited', from: u.working.from || u.working.source, prompt_sha256: u.working.prompt_sha256 || null, review: u.working.review || [] };
+      u.mode = 'view'; keepPrivate(r, u.working); refresh();
+    });
+    setTimeout(check, 0);
+    return box;
+  }
+  function given(r) {
+    let text = '';
+    try { text = S.spec.prompt ? promptFor(r, notesFor(r).usable, Lessons.snapshot(r)) : ''; } catch { text = ''; }
+    return h('details', { class: 'given' }, h('summary', null, 'What Claude is given'),
+      h('p', { class: 'note' }, 'The drafting prompt (spec/moveon_prompt.md) with this synthetic record, its suggestions, any lessons in force for this household, its routes out or its kind of accommodation (each approved by a second officer), the reviewer notes on earlier versions and the plan schema filled in. Lessons and notes are marked as data. Nothing else: no web and no other records; the lessons are the only text from earlier reviews, and they can come from reviews of other households’ plans.'),
+      text ? h('pre', null, text) : h('p', { class: 'note' }, 'The prompt file did not load.'));
+  }
+  function versionsList(r) {
+    const all = versionsFor(r.id);
+    if (!all.length) return null;
+    resolvePeople(all.map((b) => b.author));
+    return h('details', { class: 'given' }, h('summary', null, `Versions (${all.length})`),
+      h('ol', { class: 'plain small' }, all.map((b) => h('li', null, `${stamp(b.created_at)}, ${person(b.author).name}, ${SOURCE_LABEL[b.source] || b.source}. SHA-256 `, h('span', { class: 'mono' }, String(b.sha256).slice(0, 12)), '…'))));
+  }
+  function panel(r, w) {
+    const u = uiFor(r.id);
+    const decided = ['approved', 'rejected'].includes(w.state), Dn = w.decision || null, locked = decided || w.state === 'submitted';
+    const card = h('div', { class: 'card', id: 'plan-panel', dataset: { mode: planEditing(u, w) ? 'edit' : 'view', hid: r.id } },
+      h('div', { class: 'card-head' }, h('h2', { class: 'h2' }, 'Move-forward plan')));
+    if (!S.screenReady) { add(card, h('p', { class: 'note' }, 'The plan screen is not available in this view, so plans cannot be drafted, saved or approved here.')); return card; }
+    if (!u.privateChecked && S.store && S.store.kind === 'db' && S.me.id) {
+      u.privateChecked = true;
+      loadPrivate(r).then((wk) => {
+        if (!wk || u.working || !wk.plan) return;
+        // A kept draft answers the notes of its day: carry its answers to today's notes.
+        const cur = notesFor(r).usable, plan = withAnswers(wk.plan, cur, wk.review), res = screen(plan, r, cur);
+        const onlyNotes = !res.passed && res.problems.every((x) => x.rule === 'review');
+        if (!res.passed && !onlyNotes) return;
+        u.working = Object.assign({}, wk, { plan, review: cur });
+        u.msg = onlyNotes ? 'Your unsaved draft was kept. A reviewer’s note came in since it was made: answer it, then save.' : 'Your unsaved draft was kept. Save it or discard it.';
+        if (onlyNotes) u.mode = 'edit';
+        refresh();
+      });
+    }
+    // A decided plan shows the version its decision names, never a later save.
+    const b = decided ? S.versions.get(Dn.version_id) || null : currentVersion(r.id), all = versionsFor(r.id);
+    const nt = notesFor(r);
+    if (u.msg) add(card, h('div', { class: 'banner' }, u.msg));
+    if (nt.held.length && !locked) add(card, h('div', { class: 'banner warn' }, `${nt.held.length === 1 ? 'A reviewer’s note was' : `${nt.held.length} reviewer’s notes were`} not given to Claude, so the next draft need not answer ${plural(nt.held.length, 'it', 'them')}: ${[...new Set(nt.held.flatMap((x) => x.problems.map((q) => (RULE_TEXT[q.rule] || q.rule).toLowerCase())))].join('; ')}. If the point still stands, return the next version with a note in plain words.`));
+    const bad = badApprovals(r.id);
+    if (bad.length) resolvePeople(bad.map(([d]) => d.author));
+    for (const [d, c] of bad) add(card, h('div', { class: 'banner bad' }, `An approval recorded ${stamp(d.decided_at)} by ${person(d.author).name} does not count: ${c.why}.`));
+    if (u.busy) {
+      add(card, h('div', { class: 'thinking' }, h('span', { class: 'pulse' }), h('span', { id: 'draft-progress' }, 'Claude is drafting from the record and its suggestions. This can take a minute.')),
+        h('div', { class: 'row' }, h('button', { class: 'btn', onclick: () => u.ctl && u.ctl.abort() }, 'Stop')));
+      return card;
+    }
+    if (u.problems && !u.working) add(card, problemsBox('The draft was stopped by the screen and is not shown.', u.problems));
+    const cv = decided ? null : currentVersion(r.id);
+    if (!decided && (u.working || !cv || !Lessons.sameAs(r, cv.lessons))) add(card, Lessons.box(r, u.working ? u.working.lessons : null, false, !!cv && !u.working));
+    if (u.working) {
+      if (u.mode === 'edit' && !locked) { add(card, editor(r)); return card; }
+      const res = screen(u.working.plan, r, u.working.review);
+      add(card, h('div', { class: 'panel-status' }, h('span', { class: 'st st-drafting' }, 'Unsaved draft'), h('span', null, SOURCE_LABEL[u.working.source] || u.working.source), res.passed ? h('span', { class: 'tag Certain' }, 'Screen passed') : null),
+        locked ? h('p', { class: 'note' }, decided ? 'This plan is decided, so the draft cannot be saved. An editor can reopen the plan to work on it; until then you can only discard the draft.'
+          : 'This plan is awaiting approval, so the draft cannot be saved. An editor can return it to drafting; until then you can only discard the draft.') : null,
+        res.passed ? renderPlan(res.plan, u.working.review) : problemsBox('This draft no longer passes the screen.', res.problems),
+        h('div', { class: 'row' },
+          locked ? null : h('button', { class: 'btn primary', disabled: !res.passed || !canWrite(), onclick: () => saveDraft(r) }, 'Save draft'),
+          locked ? null : h('button', { class: 'btn', disabled: !canWrite(), onclick: () => { u.mode = 'edit'; refresh(); } }, 'Edit'),
+          h('button', { class: 'btn quiet danger', onclick: () => { u.working = null; u.problems = null; u.msg = ''; u.mode = 'view'; dropPrivate(r); refresh(); } }, 'Discard')),
+        given(r));
+      return card;
+    }
+    const startButtons = () => h('div', { class: 'row' },
+      S.caps.sample ? h('button', { class: b ? 'btn' : 'btn primary', disabled: !canWrite(), onclick: () => { if (!b) Timing.start('plan', r.id); draftWithClaude(r, !!b || !!u.problems); } }, b || u.problems ? 'Draft again with Claude' : 'Draft with Claude') : null,
+      h('button', { class: 'btn', disabled: !canWrite(), onclick: () => {
+        // With reviewer notes the template answers each with the placeholder, so it opens in the editor.
+        const cur = notesFor(r).usable;
+        if (!b) Timing.start('plan', r.id);
+        u.working = { plan: TaTemplate.templatePlan(r, S.moveon, cur, S.spec.rules.review.placeholder), source: 'template', review: cur, lessons: Lessons.snapshot(r) };
+        u.problems = null; u.msg = ''; if (cur.length) u.mode = 'edit'; refresh();
+      } }, 'Start from the template'),
+      b ? h('button', { class: 'btn', disabled: !canWrite(), onclick: () => {
+        const cur = notesFor(r).usable;
+        u.working = { plan: withAnswers(b.plan, cur, b.review), source: 'edited', from: b.source, prompt_sha256: b.prompt_sha256 || null, review: cur, lessons: Lessons.snapshot(r) };
+        u.mode = 'edit'; refresh();
+      } }, 'Edit this version') : null);
+    if (!b) {
+      if (decided) { add(card, h('p', { class: 'note' }, 'The version this decision names has not loaded, so it is not shown.')); return card; }
+      add(card, h('p', { class: 'note' }, S.caps.sample ? 'Claude is asked to draft from this record and its suggestions, with any reviewer notes and lessons in force as data, on your own Claude usage; the first use asks you to allow it. The draft is screened before you see it.'
+        : S.caps.sample === null ? 'Claude drafting is not available in this view. The template builds a plan from the suggestions, word for word, for you to edit.' : 'Checking whether Claude drafting is available…'),
+        canWrite() ? startButtons() : h('p', { class: 'note' }, 'You can read this household. Drafting needs Contributor access.'), given(r));
+      return card;
+    }
+    const res = screen(b.plan, r, b.review), ver = verNo(r, b);
+    const intact = S.verified.get(b.key);
+    resolvePeople([b.author, Dn && Dn.author].filter(Boolean));
+    add(card, h('div', { class: 'panel-status' }, stChip(w.state), h('span', null, `Version ${ver} of ${all.length}, saved ${stamp(b.created_at)} by ${person(b.author).name}, ${SOURCE_LABEL[b.source] || b.source}`), res.passed && intact === true ? h('span', { class: 'tag Certain' }, 'Screen passed') : null));
+    if (intact === false) { add(card, problemsBox('This version does not match the fingerprint saved with it, so it is not shown.', [])); if (canWrite() && !locked) add(card, startButtons()); return card; }
+    if (!res.passed) { add(card, problemsBox('This saved plan fails the screen when loaded, so it is not shown. Draft a new version.', res.problems)); if (canWrite() && !locked) add(card, startButtons()); return card; }
+    if (Dn && Dn.decision === 'returned' && ['returned', 'drafting'].includes(w.state)) add(card, h('div', { class: 'decision' }, h('b', null, `Returned by ${person(Dn.author).name}, ${stamp(Dn.decided_at)}`), Dn.note ? h('span', null, Dn.note) : null));
+    add(card, renderPlan(res.plan, b.review));
+    if ((b.lessons || []).length && !u.working) add(card, Lessons.box(r, b.lessons, true));
+    const fourEyes = S.workflow.four_eyes !== false;
+    if (['new', 'drafting', 'returned'].includes(w.state)) {
+      // A version saved before the latest note cannot be submitted: the next one must answer it.
+      const pendingNotes = !covers(b.review, nt.usable);
+      if (pendingNotes) add(card, h('p', { class: 'note', id: 'notes-pending' }, `This version was saved before the reviewer’s latest note. Draft a new version that answers ${nt.usable.length === 1 ? 'it' : 'the notes'}, then submit it.`));
+      add(card, h('div', { class: 'row' }, h('button', { class: 'btn primary', disabled: !canWrite() || pendingNotes, onclick: () => submit(r, b) }, 'Submit for approval')), canWrite() ? startButtons() : null);
+    } else if (w.state === 'submitted') {
+      const own = b.author === myId();
+      if (!canApprove()) add(card, h('p', { class: 'note' }, 'Awaiting approval by an editor.'));
+      else if (u.confirm === 'return' || u.confirm === 'reject') {
+        const isReject = u.confirm === 'reject', msg = h('div', { 'aria-live': 'polite' });
+        const go2 = h('button', { class: 'btn primary' }, isReject ? 'Reject the plan' : 'Return with this note');
+        const check = () => {
+          const n = screenNote(u.note || '', true);
+          const need = isReject ? !u.reason : !n.text;
+          swap(msg, n.problems.length ? problemsBox('Fix the note first.', n.problems) : h('span'));
+          go2.disabled = need || n.problems.length > 0 || (u.note || '').length > 400;
+          return n;
+        };
+        go2.addEventListener('click', () => { const n = check(); if (go2.disabled) return; decide(r, b, isReject ? 'rejected' : 'returned', isReject ? { reason: u.reason, note: n.text } : { note: n.text, keep_lesson: u.keepLesson && Lessons.ready() ? (u.lessonScope || 'household') : null, lesson_pathway: u.lessonPathway || null }); });
+        const ta = h('textarea', { rows: 3, 'aria-label': 'Note', placeholder: isReject ? 'Optional: what decided it. No names, addresses or phone numbers. Claude is given it with the next draft.' : 'What needs to change. No names, addresses or phone numbers. Claude is given it with the next draft.', oninput: (e) => { u.note = e.target.value; check(); } });
+        ta.value = u.note || '';
+        const reason = isReject ? h('select', { 'aria-label': 'Reason', onchange: (e) => { u.reason = e.target.value; check(); } }, h('option', { value: '' }, 'Choose a reason'), REJECT_REASONS.map(([k, l]) => h('option', { value: k, selected: u.reason === k }, l))) : null;
+        // The panel is not redrawn while a note is being typed, so the tick box shows and hides
+        // its own options.
+        const paths = r.eligible_pathways.map((x) => x.pathway_id);
+        const pathSel = h('label', { class: 'field', hidden: (u.lessonScope || 'household') !== 'pathway' }, 'Which route out',
+          h('select', { 'aria-label': 'Which route out', onchange: (e) => { u.lessonPathway = e.target.value; } }, paths.map((pid) => h('option', { value: pid, selected: (u.lessonPathway || paths[0]) === pid }, pathwayTitle(pid)))));
+        if (!u.lessonPathway) u.lessonPathway = paths[0] || null;
+        const keepOpts = h('div', { class: 'keep-lesson', hidden: !u.keepLesson },
+          h('label', { class: 'field' }, 'Where it applies', h('select', { 'aria-label': 'Where the lesson applies', onchange: (e) => { u.lessonScope = e.target.value; pathSel.hidden = u.lessonScope !== 'pathway'; } },
+            Lessons.SCOPES.filter(([k]) => k !== 'pathway' || paths.length).map(([k, label]) => h('option', { value: k, selected: (u.lessonScope || 'household') === k }, label)))),
+          pathSel,
+          h('p', { class: 'note' }, 'A second officer must approve a lesson, with a reason, before any draft uses it (Lessons).'));
+        const keep = !isReject && Lessons.ready() ? h('div', { class: 'keep-lesson' },
+          h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: !!u.keepLesson, onchange: (e) => { u.keepLesson = e.target.checked; keepOpts.hidden = !u.keepLesson; } }), ' Keep this note as a lesson for later plans'),
+          keepOpts) : null;
+        add(card, h('div', { class: 'inline-confirm' }, h('b', null, isReject ? 'Reject this plan' : 'Return the plan to its author'), reason ? h('label', { class: 'field' }, 'Reason', reason) : null,
+          h('label', { class: 'field' }, isReject ? 'Note (optional, 400 characters at most)' : 'Note (400 characters at most)', ta), keep, msg,
+          h('div', { class: 'row' }, go2, h('button', { class: 'btn', onclick: () => { u.confirm = null; u.note = ''; u.reason = ''; refresh(); } }, 'Cancel'))));
+        setTimeout(check, 0);
+      } else {
+        add(card, h('p', { class: 'note' }, 'Approving records that a second officer has read this plan and agrees it is the plan to work from. Each statutory decision (an offer, a referral, ending a duty) is still made and recorded outside this planner.'),
+          own && fourEyes ? h('p', { class: 'note' }, 'You saved this version, so with four-eyes on someone else must approve it. You can still return or reject it.') : null,
+          h('div', { class: 'row' },
+            h('button', { class: 'btn primary', disabled: own && fourEyes, onclick: () => decide(r, b, 'approved') }, 'Approve'),
+            h('button', { class: 'btn', onclick: () => { u.confirm = 'return'; refresh(); } }, 'Return with a note'),
+            h('button', { class: 'btn quiet danger', onclick: () => { u.confirm = 'reject'; refresh(); } }, 'Reject')));
+      }
+    } else if (decided) {
+      const self = w.state === 'approved' && b.author === Dn.author;
+      add(card, h('div', { class: 'decision' },
+        h('b', null, `${w.state === 'approved' ? 'Approved' : 'Rejected'} by ${person(Dn.author).name}, ${stamp(Dn.decided_at)}`),
+        w.state === 'approved' ? h('span', null, `Four-eyes ${Dn.four_eyes === false ? 'off' : 'on'}${self ? ', and the person who saved it approved it' : ''}. Approved plan SHA-256 ${String(Dn.plan_sha256 || '').slice(0, 16)}…, which matches this text.`)
+          : h('span', null, ((REJECT_REASONS.find((x) => x[0] === Dn.reason) || [])[1] || 'No reason given') + (Dn.note ? `: ${Dn.note}` : ''))),
+      h('div', { class: 'row' },
+        w.state === 'approved' ? h('button', { class: 'btn primary', disabled: !S.caps.downloads, onclick: () => planPack(r, b, 'md') }, 'Plan pack (.md)') : null,
+        w.state === 'approved' ? h('button', { class: 'btn', disabled: !S.caps.downloads, onclick: () => planPack(r, b, 'json') }, 'Data (.json)') : null,
+        canApprove() ? h('button', { class: 'btn quiet', onclick: () => decide(r, b, 'reopened') }, 'Reopen the plan') : null));
+    }
+    add(card, versionsList(r), given(r));
+    return card;
+  }
+  return { panel, renderPlan };
+})();
+
+/* ============================================================== lessons
+   fd-core's memory core (fdcore/memory.mjs, inlined as window.FdMemory) on the planner's own
+   records. An officer who returns a plan can keep the note as a lesson: for the household, for
+   one of its routes out (for every household), or for its kind of accommodation (for every
+   household). The lesson is a field on the return decision, under the officer's own decisions
+   path, so the path says who kept it, with the SHA-256 of its scope and text. The memory core
+   admits a person's own reviewed note at once, but a note can carry text pasted from elsewhere
+   (fd-core's research/POISONING_LOG.md, P1.1), so here every lesson waits for a second
+   officer, who is not its author, to approve it with a reason, under their own path, for that
+   SHA-256. A lesson in force is recalled into later plans that fit its scope, after the memory
+   core's recall screen (planted instructions) and a check of its text against its SHA-256: it
+   is shown with its provenance, sent to Claude as data in its own block, never as a fact or a
+   rule, and recorded with each version saved. The hosted build has no lessons yet. */
+const Lessons = (() => {
+  const FM = window.FdMemory;
+  const Cap = (n) => { const w = String(n); return n === 1 ? 'One' : n === 2 ? 'Two' : n === 3 ? 'Three' : w; };
+  const SCOPES = [
+    ['household', 'This household only'],
+    ['pathway', 'One of its routes out, for every household'],
+    ['accommodation', 'Its kind of accommodation, for every household'],
+  ];
+  const ready = () => !!(FM && S.memRules);
+  function scopeOf(choice, r, pid) {
+    if (choice === 'pathway' && pid) return { pathway: pid };
+    if (choice === 'accommodation') return { accommodation_type: r.accommodation_type };
+    return { household: r.id };
+  }
+  const sha = (scope, text) => sha256(canon({ scope, text }));
+  const accLabel = (t) => { const x = S.records.find((q) => q.accommodation_type === t); return x ? x.accommodation : String(t).replace(/_/g, ' '); };
+  function scopeWords(sc, r) {
+    if (!sc) return 'no scope';
+    if (sc.household) return r && r.id === sc.household ? 'this household' : `household ${sc.household}`;
+    if (sc.pathway) return `${pathwayTitle(sc.pathway).toLowerCase()}, every household`;
+    if (sc.accommodation_type) return `${accLabel(sc.accommodation_type)} accommodation, every household`;
+    return 'no scope';
+  }
+  // The scopes a household's draft is recalled under: the household, its kind of accommodation,
+  // and each route out it is suggested.
+  const queries = (r) => [{ household: r.id, accommodation_type: r.accommodation_type }].concat(r.eligible_pathways.map((x) => ({ household: r.id, accommodation_type: r.accommodation_type, pathway: x.pathway_id })));
+  const applies = (sc, r) => { const ks = Object.keys(sc || {}); return ks.length > 0 && queries(r).some((q) => ks.every((k) => q[k] === sc[k])); };
+  function admission(scope, text) {
+    if (!ready()) return { status: 'rejected', why: ['the memory core is not in this build'] };
+    const guard = (t) => screenNote(t, true).problems.map((x) => x.rule);
+    return FM.memoryAdmission({ kind: 'lesson', scope, text, source: 'review:returned-plan', author: myId() || 'unknown', author_kind: 'person', trust: 'high' }, S.memRules, guard);
+  }
+  function status(L) {
+    const ds = (S.lessonDecisions.get(L.key) || []).slice().sort(byTime('decided_at'));
+    let wasApproved = false;
+    for (const d of ds) if (d.decision === 'lesson_approved' && d.author !== L.author) wasApproved = true;
+    for (let i = ds.length - 1; i >= 0; i--) {
+      const d = ds[i];
+      if (d.decision === 'lesson_rejected') return { state: 'rejected', d, retired: wasApproved };
+      if (d.decision === 'lesson_approved' && d.author !== L.author && String(d.reason || '').trim() && d.lesson_sha256 === L.sha256) return { state: 'approved', d };
+    }
+    return { state: 'waiting', d: null };
+  }
+  function asMemory(L) {
+    const st = status(L);
+    return { id: L.key, kind: 'lesson', scope: L.scope, text: L.text, status: st.state === 'approved' ? 'admitted' : st.state, superseded_by: null,
+      valid_from: st.d ? String(st.d.decided_at || '').slice(0, 10) : '', decided_at: st.d ? st.d.decided_at : L.proposed_at,
+      provenance: { proposed_by: L.author, proposed_at: L.proposed_at, from: L.hid, approved_by: st.d ? st.d.author : null, approved_at: st.d ? st.d.decided_at : null, reason: st.d ? st.d.reason : '' } };
+  }
+  function recall(r) {
+    if (!ready()) return { recalled: [], withheld: [] };
+    const mems = [...S.lessons.values()].map(asMemory), seen = new Set(), out = { recalled: [], withheld: [] };
+    for (const q of queries(r)) {
+      const got = FM.recallMemories(mems, q, S.memRules, { limit: 5, verify: (m) => S.lessonVerified.get(m.id) === true });
+      for (const m of got.recalled) if (!seen.has(m.id) && out.recalled.length < 5) { seen.add(m.id); out.recalled.push(m); }
+      for (const w of got.withheld) if (!seen.has(w.id)) { seen.add(w.id); out.withheld.push(w); }
+    }
+    return out;
+  }
+  function snapshot(r) {
+    return recall(r).recalled.map((m, i) => {
+      const L = S.lessons.get(m.id) || {};
+      return { key: m.id, id: `lesson-${i + 1}`, scope: m.scope, text: m.text, sha256: L.sha256 || '', proposed_by: m.provenance.proposed_by, from: m.provenance.from,
+        approved_by: m.provenance.approved_by, approved_at: m.provenance.approved_at, reason: m.provenance.reason };
+    });
+  }
+  const sameAs = (r, recorded) => { const a = snapshot(r).map((l) => l.key + l.sha256).sort().join('|'), b = (recorded || []).map((l) => l.key + l.sha256).sort().join('|'); return a === b; };
+  // What goes to Claude: the lesson's words and where it applies, never who or when.
+  const forPrompt = (list, r) => (list || []).map((l) => ({ id: l.id, applies_to: scopeWords(l.scope, r), text: l.text }));
+  const provenanceLine = (l, r) => `For ${scopeWords(l.scope, r)}. Kept by ${person(l.proposed_by).name} from a returned plan${l.from ? ` (${l.from})` : ''}; approved by ${person(l.approved_by).name}, ${stamp(l.approved_at)}: ${l.reason}`;
+  function box(r, recorded, isVersion, forNext) {
+    if (!ready()) return null;
+    const list = recorded || snapshot(r);
+    const rec = recorded ? null : recall(r);
+    const withheld = rec ? rec.withheld.filter((w) => S.lessonVerified.has(w.id)) : [];
+    const waiting = recorded ? 0 : [...S.lessons.values()].filter((L) => status(L).state === 'waiting' && applies(L.scope, r)).length;
+    if (!list.length && !withheld.length && !waiting) return null;
+    resolvePeople(list.flatMap((l) => [l.proposed_by, l.approved_by]).filter(Boolean));
+    return h('div', { class: 'lessons' },
+      h('h3', { class: 'h3' }, isVersion ? 'Lessons in front of the drafter of this version' : recorded ? 'Lessons in front of the drafter' : forNext ? 'Lessons for the next draft' : 'Lessons for this household'),
+      list.length ? h('ul', { class: 'plain' }, list.map((l) => h('li', null, h('div', null, h('span', { class: 'cite' }, l.id), ' ', l.text), h('div', { class: 'note' }, provenanceLine(l, r))))) : null,
+      list.length && !isVersion ? h('p', { class: 'note' }, 'Claude is sent these as data, in their own block, with no names or dates: they never add a figure or a rule, and the screen checks the plan as it always does. Saving a version records them with it.') : null,
+      waiting ? h('p', { class: 'note' }, `${waiting === 1 ? 'One more lesson' : `${Cap(waiting)} more lessons`} for this household ${waiting === 1 ? 'is' : 'are'} waiting for a second officer, in Lessons.`) : null,
+      withheld.length ? h('div', { class: 'banner warn' }, `${withheld.length === 1 ? 'One lesson is' : `${Cap(withheld.length)} lessons are`} held back from drafting: ${[...new Set(withheld.flatMap((w) => w.why))].join('; ')}.`) : null);
+  }
+  async function decideLesson(L, decision, reason) {
+    const why = String(reason || '').trim();
+    if (!canApprove() || !why) return;
+    if (decision === 'lesson_approved' && L.author === myId()) return;
+    if (screenNote(why, true).problems.length) { banner('lesson', 'warn', 'The reason cannot be saved as it is: no names, addresses or phone numbers, and no instructions to a model.'); return; }
+    if (decision === 'lesson_approved') {
+      if ((await sha(L.scope, L.text)) !== L.sha256) { banner('lesson', 'bad', 'This lesson’s text does not match the fingerprint saved with it, so it cannot be approved.'); return; }
+      const adm = admission(L.scope, L.text);
+      if (adm.status === 'rejected') { banner('lesson', 'bad', `The memory core does not admit this lesson: ${adm.why.join('; ')}.`); return; }
+    }
+    const doc = { household_id: L.hid, decision, lesson_id: L.key, lesson_sha256: L.sha256, reason: why.slice(0, 400), decided_at: nowIso() };
+    try {
+      await ensureMember();
+      await S.store.set(ownColl('decisions', myId()), newId('lesson'), doc);
+      await audit(decision, L.hid, `for ${scopeWords(L.scope)}`);
+      uiFor('lesson:' + L.key).reason = '';
+    } catch (e) { writeFailed(e, 'the decision on the lesson'); }
+    refresh();
+  }
+  function card(L, st) {
+    const u = uiFor('lesson:' + L.key), own = L.author === myId(), ok = S.lessonVerified.get(L.key);
+    resolvePeople([L.author, st.d && st.d.author].filter(Boolean));
+    const head = h('div', null, h('div', { class: 'lesson-text' }, L.text),
+      h('div', { class: 'note' }, `For ${scopeWords(L.scope)}. Kept by ${person(L.author).name}, ${stamp(L.proposed_at)}, from a returned plan for `, S.byId.has(L.hid) ? h('a', { href: '#file-' + L.hid, class: 'mono' }, L.hid) : h('span', { class: 'mono' }, L.hid), '.'),
+      st.d ? h('div', { class: 'note' }, `${st.state === 'approved' ? 'Approved' : st.retired ? 'Retired' : 'Not kept'} by ${person(st.d.author).name}, ${stamp(st.d.decided_at)}: ${st.d.reason || ''}`) : null,
+      ok === false ? h('div', { class: 'banner bad' }, 'Its text no longer matches the fingerprint saved with it, so no draft uses it.') : null);
+    const reasonBox = (label, decision, primary) => {
+      const ta = h('textarea', { rows: 2, 'aria-label': 'Reason', placeholder: 'Why. No names, addresses or phone numbers.', oninput: (e) => { u.reason = e.target.value; btn.disabled = !u.reason.trim(); } });
+      ta.value = u.reason || '';
+      const btn = h('button', { class: primary ? 'btn primary' : 'btn', disabled: !(u.reason || '').trim(), onclick: () => decideLesson(L, decision, u.reason) }, label);
+      return [ta, btn];
+    };
+    let actions = null;
+    if (st.state === 'waiting' && canApprove() && !own) {
+      const [ta, a] = reasonBox('Approve the lesson', 'lesson_approved', true);
+      const [, x] = reasonBox('Do not keep it', 'lesson_rejected', false);
+      x.disabled = a.disabled; ta.addEventListener('input', () => { x.disabled = a.disabled; });
+      actions = h('div', { class: 'inline-confirm' }, h('label', { class: 'field' }, 'Reason (required, 400 characters at most)', ta), h('div', { class: 'row' }, a, x));
+    } else if (st.state === 'waiting' && own) {
+      const [ta, x] = reasonBox('Withdraw it', 'lesson_rejected', false);
+      actions = h('div', { class: 'inline-confirm' }, h('p', { class: 'note' }, 'You kept this note, so another officer must approve it. You can withdraw it.'), canApprove() ? h('label', { class: 'field' }, 'Reason', ta) : null, canApprove() ? x : null);
+    } else if (st.state === 'waiting') {
+      actions = h('p', { class: 'note' }, 'Waiting for an editor who did not write it.');
+    } else if (st.state === 'approved' && canApprove()) {
+      const [ta, x] = reasonBox('Retire it', 'lesson_rejected', false);
+      actions = h('details', { class: 'given' }, h('summary', null, 'Retire this lesson'), h('label', { class: 'field' }, 'Reason', ta), x);
+    }
+    return h('li', { class: 'lesson-card' }, head, actions);
+  }
+  function draw() {
+    const v = $('#view-lessons');
+    const all = [...S.lessons.values()].sort(byTime('proposed_at')).reverse();
+    const g = { waiting: [], approved: [], rejected: [] };
+    for (const L of all) { const st = status(L); g[st.state].push(card(L, st)); }
+    const section = (title, items, empty) => h('div', { class: 'card' }, h('div', { class: 'card-head' }, h('h2', { class: 'h2' }, title), h('span', { class: 'note' }, String(items.length))),
+      items.length ? h('ul', { class: 'plain lesson-list' }, items) : h('p', { class: 'note' }, empty));
+    const hostedBuild = typeof window.TaHosted === 'object' && window.TaHosted !== null;
+    swap(v,
+      h('div', { class: 'head' }, h('h1', { class: 'h1' }, 'Lessons'),
+        h('p', { class: 'lede' }, 'Notes an officer kept from a returned plan, for later plans on the same household, route out or kind of accommodation. A lesson is used only once a second officer approves it, with a reason.'),
+        h('p', { class: 'note' }, 'Each lesson is checked by fd-core’s memory core: when it is kept (no names, no instructions to a model, a scope and a source), and every time a draft recalls it (its text against the fingerprint saved with it, and the instruction screen again). Claude is sent lessons as data, never as facts or rules, and the screen checks every plan as usual. A screen is a net, not a guarantee: the second officer reads each lesson [Certain].')),
+      ready() ? null : h('div', { class: 'banner warn' }, hostedBuild ? 'The hosted version has no lessons yet: they run in the artifact and demo builds.' : 'The memory core is not in this build, so lessons cannot be kept or used.'),
+      section('Waiting for a second officer', g.waiting, 'None. Return a plan with a note and tick “Keep this note as a lesson”.'),
+      section('In force', g.approved, 'None yet.'),
+      section('Not kept, withdrawn or retired', g.rejected, 'None.'));
+  }
+  function waitingCount() { let n = 0; for (const L of S.lessons.values()) if (status(L).state === 'waiting') n++; return n; }
+  return { SCOPES, ready, scopeOf, sha, scopeWords, admission, status, recall, snapshot, sameAs, forPrompt, box, draw, waitingCount };
+})();
+
+/* ============================================================== scenario
+   tamarket/spec/scenario.mjs, the port of tamarket/scenario.py: arithmetic on inputs the
+   person sets, never a forecast. The page sets no input itself. */
+const SC_STATEMENT = 'Arithmetic on the inputs you set. Not a forecast, and not a saving the council will make.';
+const SC_CAVEATS = [
+  'Households, places and lease costs differ between types of accommodation, and leasing has set-up and void costs [Likely].',
+  'No discounting, inflation, change in demand or change in prices is applied [Certain].',
+];
+const SC_ROUNDING = 'Money results are whole pounds, rounded halves away from zero from the unrounded arithmetic; payback years to 2 decimal places the same way.';
+const SC_FIELDS = [
+  ['from_type', 'Moving from', 'type', 'The type of temporary accommodation the households leave.'],
+  ['to_type', 'Moving to', 'type', 'The type they move to.'],
+  ['households_moved', 'Households moved', 'whole', ''],
+  ['price_gap_per_household_year', 'Your price gap per household-year (£)', 'money', 'What the first type costs a year for one household, less what the second costs. Your own figure; the planner never sets it.'],
+  ['setup_cost_per_household', 'Set-up cost per household (£)', 'money', 'One-off, for each household moved.'],
+  ['void_cost_per_household_year', 'Void and repair cost per household-year (£)', 'money', 'On the homes moved to.'],
+  ['lease_term_years', 'Lease term (years)', 'number', 'Up to 30 years.'],
+  ['households_on_from_type', 'Households on the first type (optional cap)', 'whole', 'Households moved cannot be more than this.'],
+];
+const SC_RESULTS = [
+  ['gross_difference_per_year', 'Gross difference a year'], ['void_cost_per_year', 'Void cost a year'],
+  ['net_difference_per_year', 'Net difference a year'], ['set_up_cost', 'Set-up cost'],
+  ['net_difference_over_term', 'Net difference over the lease term, after set-up'],
+];
+function scInputs() {
+  const out = {};
+  for (const [k, , kind] of SC_FIELDS) {
+    const raw = S.scenario[k];
+    if (raw === undefined || raw === null || String(raw).trim() === '') continue;
+    out[k] = kind === 'type' ? String(raw) : (Number.isFinite(Number(raw)) ? Number(raw) : String(raw));
+  }
+  return out;
+}
+function scenarioResults() {
+  const box = $('#sc-results');
+  if (!box) return;
+  const inputs = scInputs(), res = TaScenario.evaluateScenario(inputs);
+  for (const [k] of SC_FIELDS) {
+    const el = $('#sc-err-' + k);
+    if (el) el.textContent = (res.errors || []).filter((e) => e.field === k).map((e) => e.error.replace(/_/g, ' ')).join('; ');
+  }
+  const t = inputs.from_type, n = t ? S.records.filter((r) => r.accommodation_type === t).length : null;
+  const help = $('#sc-cap-help');
+  if (help) swap(help, t && TYPE_LABEL[t] ? h('span', null, `This synthetic caseload has ${n} ${plural(n, 'household', 'households')} on ${TYPE_LABEL[t].toLowerCase()}. `,
+    h('button', { class: 'btn quiet small', type: 'button', onclick: () => { S.scenario.households_on_from_type = String(n); local.set('scenario', S.scenario); const el = $('#sc-in-households_on_from_type'); if (el) el.value = String(n); scenarioResults(); } }, 'Use it as the cap')) : '');
+  if (res.errors) {
+    const missing = res.errors.filter((e) => e.error === 'required').length;
+    swap(box, h('p', { class: 'note' }, missing === res.errors.length ? 'Set every input to see the arithmetic.' : 'Fix the inputs marked above to see the arithmetic.'));
+    return;
+  }
+  const R = res.results, notes = S.spec.scenario && S.spec.scenario.note_texts ? S.spec.scenario.note_texts : {};
+  swap(box, h('div', { class: 'kpis' },
+    SC_RESULTS.map(([k, label]) => kpi(label, gbp(R[k]), '')),
+    kpi('Payback', R.payback_years === null ? 'Not recovered' : `${R.payback_years} ${plural(R.payback_years, 'year', 'years')}`, R.recovered_within_term ? 'within the lease term' : 'not within the lease term')),
+  res.notes.length ? h('ul', { class: 'plain' }, res.notes.map((id) => h('li', null, notes[id] || id))) : null,
+  h('p', { class: 'house' }, SC_STATEMENT),
+  h('div', { class: 'row' }, h('button', { class: 'btn', disabled: !S.caps.downloads, onclick: () => exportScenario(inputs, res) }, 'Save as Markdown')));
+}
+async function exportScenario(inputs, res) {
+  if (!S.caps.downloads) return;
+  const f = (S.spec.scenario && S.spec.scenario.formulae) || {};
+  const L = ['# Scenario: arithmetic on your inputs', '', `> ${SC_STATEMENT}`, '', '## Inputs', '', '| Input | Value |', '|---|---|',
+    ...SC_FIELDS.filter(([k]) => k in inputs).map(([k, label]) => `| ${mdCell(label)} | ${mdCell(SC_FIELDS.find((x) => x[0] === k)[2] === 'type' ? TYPE_LABEL[inputs[k]] || inputs[k] : inputs[k])} |`), '',
+    '## Results', '', '| Result | Value |', '|---|---|', ...SC_RESULTS.map(([k, label]) => `| ${label} | ${gbp(res.results[k])} |`),
+    `| Payback | ${res.results.payback_years === null ? 'not recovered' : res.results.payback_years + ' years'} |`, `| Recovered within the term | ${res.results.recovered_within_term ? 'yes' : 'no'} |`, '',
+    ...(res.notes.length ? ['## Notes', '', ...res.notes.map((id) => `- ${(S.spec.scenario.note_texts || {})[id] || id}`), ''] : []),
+    '## How it is worked out', '', ...Object.entries(f).map(([k, v]) => `- ${k} = ${v}`), '', SC_ROUNDING, '', ...SC_CAVEATS.map((c) => `- ${c}`), ''];
+  try { await S.caps.downloads.save({ filename: 'move-forward-scenario.md', data: L.join('\n') }); }
+  catch (e) { if (e && e.code !== 'declined') banner('dl', 'warn', 'The file could not be saved from this view.'); }
+}
+function drawScenario() {
+  const v = $('#view-scenario');
+  if (v.dataset.built === '1') { scenarioResults(); return; }
+  v.dataset.built = '1';
+  const ref = S.data.meta.published_inputs || {};
+  const field = ([k, label, kind, help]) => {
+    const id = 'sc-in-' + k;
+    const onIn = (e) => { S.scenario[k] = e.target.value; local.set('scenario', S.scenario); scenarioResults(); };
+    const input = kind === 'type'
+      ? h('select', { id, onchange: onIn }, h('option', { value: '', selected: !S.scenario[k] }, 'Choose a type'), TaScenario.TYPES.map((t) => h('option', { value: t, selected: S.scenario[k] === t }, TYPE_LABEL[t] || t)))
+      : h('input', { id, type: 'number', inputmode: kind === 'whole' ? 'numeric' : 'decimal', step: kind === 'whole' ? '1' : 'any', value: S.scenario[k] || '', oninput: onIn });
+    return h('label', { class: 'field', for: id }, label, input, help ? h('span', { class: 'help' }, help) : null, h('span', { class: 'err', id: 'sc-err-' + k, 'aria-live': 'polite' }));
+  };
+  swap(v, 
+    h('div', { class: 'head' }, h('h1', { class: 'h1' }, 'Scenario'),
+      h('p', { class: 'lede' }, 'What moving households from one type of temporary accommodation to another would come to, on figures you set. It does the arithmetic and nothing else: no figure is estimated, discounted or filled in for you.'),
+      h('p', { class: 'house' }, SC_STATEMENT)),
+    h('div', { class: 'grid2' },
+      h('div', { class: 'card' }, h('h2', { class: 'h2' }, 'Your inputs'), h('div', { class: 'sc-form' }, SC_FIELDS.map(field)), h('div', { id: 'sc-cap-help', class: 'note' })),
+      h('div', { class: 'col' },
+        h('div', { class: 'card' }, h('h2', { class: 'h2' }, 'The arithmetic'), h('div', { id: 'sc-results' })),
+        h('div', { class: 'card' }, h('h2', { class: 'h2' }, 'For reference: England averages'),
+          h('p', { class: 'note' }, `England gross spend a week per household on each temporary accommodation line, ${ref.cost_year || ''}, from MHCLG's revenue outturn (RO4), as used to build the synthetic caseload. Averages across councils: not your council's prices, and not a price gap to use as it is. Council or housing association stock is mostly costed outside the TA lines, so its row covers the TA-line spend only [Likely].`),
+          h('div', { class: 'scroll' }, h('table', null, h('thead', null, h('tr', null, h('th', null, 'Type'), h('th', { class: 'num' }, 'A week'))),
+            h('tbody', null, Object.entries(ref.weekly_cost_by_type || {}).map(([t, w]) => h('tr', null, h('td', null, TYPE_LABEL[t] || t), h('td', { class: 'num' }, gbp(w))))))),
+          h('p', { class: 'note' }, OGL_LINE)))),
+    h('div', { class: 'card' }, h('h2', { class: 'h2' }, 'How it is worked out'),
+      h('ul', { class: 'plain small' }, Object.entries((S.spec.scenario && S.spec.scenario.formulae) || {}).map(([k, f]) => h('li', null, h('span', { class: 'mono' }, k), ' = ', f))),
+      h('p', { class: 'note' }, SC_ROUNDING), h('ul', { class: 'plain small' }, SC_CAVEATS.map((c) => h('li', null, c)))));
+  scenarioResults();
+}
+
+/* ============================================================== audit */
+function auditRows() {
+  const q = S.auditQuery.trim().toUpperCase();
+  return S.audit.filter((e) => !q || String(e.household_id || '').includes(q) || (ACTION_LABEL[e.action] || e.action).toUpperCase().includes(q));
+}
+async function exportAudit(kind) {
+  if (!S.caps.downloads) return;
+  const rows = auditRows();
+  await resolvePeople(rows.map((e) => e.author));
+  const head = ['at', 'who', 'household', 'action', 'detail'];
+  const vals = (e) => [e.at, nameFor(e.author), e.household_id || '', ACTION_LABEL[e.action] || e.action, e.detail || ''];
+  const note = S.auditCapped ? 'The planner holds the latest 1,000 entries per person, so this log may be incomplete.' : '';
+  const data = kind === 'csv' ? [head.join(','), ...rows.map((e) => vals(e).map(csvCell).join(','))].join('\n') + '\n'
+    : ['# Move forward planner audit log', '', `Exported ${stamp(nowIso())}. Synthetic records only.${note ? ' ' + note : ''}`, '',
+      '| When | Who | Household | Action | Detail |', '|---|---|---|---|---|', ...rows.map((e) => `| ${stamp(e.at)} | ${mdCell(nameFor(e.author))} | ${e.household_id || ''} | ${mdCell(ACTION_LABEL[e.action] || e.action)} | ${mdCell(e.detail)} |`), ''].join('\n');
+  try {
+    await S.caps.downloads.save({ filename: `move-forward-audit.${kind}`, data });
+    await audit('audit_exported', null, kind === 'csv' ? '.csv' : '.md');
+  } catch (e) { if (e && e.code !== 'declined') banner('dl', 'warn', 'The file could not be saved from this view.'); }
+}
+function drawAudit() {
+  const v = $('#view-audit');
+  const rows = auditRows(), shown = rows.slice(0, 300);
+  resolvePeople(shown.map((e) => e.author));
+  const search = h('input', { type: 'search', placeholder: 'SYN-0001 or an action', value: S.auditQuery, 'aria-label': 'Filter the audit log', oninput: (e) => { S.auditQuery = e.target.value; refresh(); } });
+  const keepFocus = document.activeElement && document.activeElement.getAttribute('aria-label') === 'Filter the audit log';
+  swap(v, 
+    h('div', { class: 'head' }, h('h1', { class: 'h1' }, 'Audit log'),
+      h('p', { class: 'lede' }, 'Every action in the planner: when, who and on which synthetic household. Each person’s entries are stored under their own path, which only they can write, so nobody but the artifact’s owner can add an entry in someone else’s name.')),
+    h('div', { class: 'row' }, h('label', { class: 'field inline' }, 'Filter', search), h('span', { class: 'spacer' }),
+      h('button', { class: 'btn', disabled: !S.caps.downloads || !rows.length, onclick: () => exportAudit('csv') }, 'Export .csv'),
+      h('button', { class: 'btn', disabled: !S.caps.downloads || !rows.length, onclick: () => exportAudit('md') }, 'Export .md')),
+    S.auditCapped ? h('div', { class: 'banner warn' }, 'This view holds the latest 1,000 entries per person, so older entries are not shown or exported.') : null,
+    rows.length ? h('div', { class: 'card flush' }, h('div', { class: 'scroll' }, h('table', null,
+      h('thead', null, h('tr', null, h('th', null, 'When'), h('th', null, 'Who'), h('th', null, 'Household'), h('th', null, 'Action'), h('th', null, 'Detail'))),
+      h('tbody', null, shown.map((e) => h('tr', null, h('td', { class: 'nowrap' }, stamp(e.at)), h('td', null, whoLine(e.author)),
+        h('td', null, e.household_id ? h('button', { class: 'btn quiet small mono', onclick: () => go('file', e.household_id) }, e.household_id) : h('span', { class: 'muted' }, 'planner')),
+        h('td', null, ACTION_LABEL[e.action] || e.action), h('td', { class: 'muted' }, e.detail || '')))))))
+      : h('p', { class: 'note' }, S.audit.length ? 'No entry matches the filter.' : 'Nothing has happened in this planner yet.'),
+    rows.length > shown.length ? h('p', { class: 'note' }, `Showing the latest ${shown.length} of ${rows.length}. The exports hold all ${rows.length}.`) : null);
+  if (keepFocus) { search.focus(); const n = search.value.length; try { search.setSelectionRange(n, n); } catch { /* not a text input */ } }
+}
+
+/* ============================================================== method */
+async function setFourEyes(on) {
+  if (!canApprove()) return;
+  try {
+    await S.store.set('config', 'workflow', { four_eyes: on, updated_at: nowIso(), updated_by: myId() });
+    await audit('workflow_changed', null, on ? 'four-eyes on' : 'four-eyes off');
+  } catch (e) { writeFailed(e, 'the setting'); }
+}
+const SCREEN_STEPS = [
+  ['Normalise', 'Curly quotes, en dashes and similar become plain characters, and the plan that passes is the normalised one.'],
+  ['Style', 'No em dashes, and nothing outside plain ASCII apart from the pound sign.'],
+  ['Schema', 'The plan matches moveon.schema.json: the fields, their limits, and a confidence on every claim.'],
+  ['Record', 'The plan is for this synthetic record, and the record is synthetic.'],
+  ['Pathway', 'Only the pathways listed for this record, and "general" for checks about no one pathway.'],
+  ['fd-core', 'The shared guardrails screen: firm names by their legal ending, email addresses, postcodes, phone numbers, judging or accusing words outside a hedged clause, and, in the hosted version\u2019s drafting function only, names on the private deny list.'],
+  ['Decision', 'No sentence states a decision (a duty ended, a household eligible, suitable or owed, an offer approved or refused, a household that must move) unless it is a condition or a check.'],
+  ['Person', 'No capitalised word in mid-sentence that is not on the list of legal and housing terms, no title before a name, no unknown acronym.'],
+  ['Figure', 'Every figure is in the record, is a statutory figure from pathways.json, or is part of a legal reference.'],
+];
+/* ============================================================== how it works */
+// A plain-English guide for someone new: what the planner is for, who uses it, a typical week,
+// what is demo data in this copy, and what a deployment adds.
+function drawGuide() {
+  const v = $('#view-guide');
+  const hosted = typeof window.TaHosted === 'object' && window.TaHosted !== null;
+  const sec = (title, ...kids) => h('section', { class: 'card' }, h('h2', { class: 'h2' }, title), ...kids);
+  const p = (...kids) => h('p', { class: 'body' }, ...kids);
+  const li = (b, ...rest) => h('li', null, b ? h('b', null, b + ' ') : null, ...rest);
+  const copy = isDemo()
+    ? [li('Nothing is kept.', 'Changes stay in this tab and go when you reload or close it.'),
+       li('Plans start from the template,', 'as drafting with Claude needs the page inside Claude.'),
+       li('The officers are made up.', 'Sign in as one, and use “Switch user” at the foot of the sidebar to become another and see four-eyes at work: the officer who saved a plan cannot approve it.')]
+    : hosted
+      ? [li('Records are kept in the project’s database,', 'which sets every author and time itself and writes the audit log.'),
+         li('Plans are drafted by the project’s drafting function,', 'with the same screen.')]
+      : [li('Records are kept in this artifact’s shared store,', 'so the people it is shared with see the same plans and audit log.'),
+         li('Plans are drafted by Claude', 'on the viewer’s own Claude usage, from the household’s record only.')];
+  swap(v,
+    h('div', { class: 'head' }, h('h1', { class: 'h1' }, 'How it works'),
+      h('p', { class: 'lede' }, 'What Move forward is for, who uses it, a typical week with it, and what is demo data in this copy.')),
+    sec('What it does',
+      p('Move forward has two parts. The market picture shows what a council spends on temporary accommodation and on what kind, set against councils like it, none named. The planner, this page, helps housing officers plan each household’s route out of temporary accommodation into a settled home.'),
+      p('Plans are suggestions for an officer to approve, never decisions. Each statutory decision is made and recorded outside the planner.')),
+    h('div', { class: 'grid2' },
+      sec('Who uses it', h('ul', { class: 'plain' },
+        li('A housing officer', 'holds a caseload: opens each household, makes a move-forward plan, works through its checks and records progress.'),
+        li('A second officer', '(an Editor or the owner) approves each plan, returns it with a note or rejects it. With four-eyes on, the default, nobody approves their own.'),
+        li('A team manager', 'reads the market picture and the scenario: where the council’s spend and mix sit against its peers, and what a change of mix would come to on figures they set.'))),
+      sec('In this copy', h('ul', { class: 'plain' },
+        li('Published figures:', 'MHCLG’s homelessness statistics (table TA1) and revenue outturn (RO4), as aggregates, in the market picture and as reference points in the scenario.'),
+        li('Synthetic:', `every household. The ${S.records.length} records are made up from a seed and describe nobody.`),
+        ...copy))),
+    sec('A typical week', h('ol', { class: 'steps' },
+      h('li', null, h('b', null, 'Start on the overview. '), 'Plans waiting for approval and for how long, the pipeline of every household’s plan, time in temporary accommodation, the checks raised and the caseload’s weekly cost range from its synthetic bands. The board shows every household by plan stage.'),
+      h('li', null, h('b', null, 'Work from the queues. '), 'Plans to approve, Returned to me and My households hold the work that is yours; the views pick out families in bed and breakfast, placements out of district and stays of two years or more. j and k move through a list, Enter opens a row, and Ctrl or Cmd + K finds a household or a page.'),
+      h('li', null, h('b', null, 'Open a household. '), 'Its file shows the routes out the record allows (social housing through the allocation scheme, a private rented sector offer, supported housing) and a selection of the checks legislation and MHCLG guidance set for it, each with its source.'),
+      h('li', null, h('b', null, 'Make a plan. '), 'It is screened before it is saved: no names it can spot, no figure outside the record, its statutory figures or a legal reference, and no wording that reads as a statutory decision, such as saying the duty has been discharged. The screen is a net, not a guarantee, so the officer reads every plan.'),
+      h('li', null, h('b', null, 'Submit it for approval. '), 'A second officer approves it, returns it with a note or rejects it. An approval counts only while the plan still matches what they approved.'),
+      h('li', null, h('b', null, 'Work it through. '), 'Tick the checks as they are done and record progress against the plan. A returned plan’s notes can become lessons for the next draft, once a second officer approves them' + (hosted ? ' (not yet in the hosted version).' : '.')),
+      h('li', null, h('b', null, 'Watch the clocks. '), 'Compliance at risk lists the notices due or overdue (to the council where a household is placed, and for a child once the parent agrees), families near or past 6 weeks in bed and breakfast, and review decisions near or past eight weeks. The planner drafts each notice with placeholders and records what was sent; it sends nothing.'),
+      h('li', null, h('b', null, 'Hand over. '), 'Each household has a handover summary for an officer taking it over, with what changed since a date you pick.'),
+      h('li', null, h('b', null, 'Keep the record. '), 'Every step is in the audit log, which can be exported.'))),
+    h('div', { class: 'grid2' },
+      sec('What a deployment could add', h('ul', { class: 'plain' },
+        li('The council’s own caseload:', 'records from its housing system in place of the synthetic ones, after its own data protection impact assessment.'),
+        li('Sign-in and roles:', 'named accounts, the owner setting who may approve, and an audit log the database writes.' + (hosted ? '' : ' A hosted version (Supabase and Netlify) is built and tested, not deployed.')),
+        li('The drafting service:', 'drafting on the server with the same screen.'),
+        li('The council’s own rules:', 'its allocation scheme, local checks and prices.'),
+        li('New figures each quarter:', 'the market picture rebuilt when MHCLG publishes.'))),
+      sec('Improving it',
+        p('This is demo data and a first set of rules, and both can be improved further: more of the checks guidance sets (the planner holds a selection, not a complete list), the council’s own prices in the scenario in place of reference points, each quarter’s release as it comes, and lessons from the team’s own approvals.'),
+        p('Method has the rules, the records and their sources in full.'))));
+}
+
+function drawMethod() {
+  const v = $('#view-method'), meta = S.data.meta, m = S.manifest;
+  // The hosted build loads app/src/hosted.js first, which sets window.TaHosted.
+  const hosted = typeof window.TaHosted === 'object' && window.TaHosted !== null;
+  const fourEyes = S.workflow.four_eyes !== false;
+  const sec = (title, ...kids) => h('section', { class: 'card' }, h('h2', { class: 'h2' }, title), ...kids);
+  const p = (...kids) => h('p', { class: 'body' }, ...kids);
+  swap(v, 
+    h('div', { class: 'head' }, h('h1', { class: 'h1' }, 'Method'),
+      h('p', { class: 'lede' }, 'How the planner works, what it is built from, and what it cannot do. Every household is synthetic. Every plan is a suggestion for an officer to approve, never a decision.')),
+    sec('What it does',
+      p('For each synthetic household in temporary accommodation, the planner shows the routes out and the checks that legislation and MHCLG guidance list for its record, as worked out by tamarket/moveon.py. An officer drafts a plan, with Claude or from a template, edits it, and submits it. A second officer approves it, returns it with a note or rejects it. The officer then works through the checks and records progress. Each statutory decision (an offer, a referral, ending a duty) is made and recorded outside the planner.'),
+      p('The pathways are social housing through the allocation scheme, a private rented sector offer and supported housing. The suitability checks cover bed and breakfast limits for families, for 16 and 17 year olds and for care leavers under 25, children’s services for young applicants, placements outside the district, space and affordability, and medical needs.')),
+    sec('The records',
+      p(meta.notice),
+      p(`${S.records.length} records from ${meta.generator} (version ${meta.generator_version}), seed ${meta.seed}. The same seed gives the same records. Each field and how it was drawn, with its confidence:`),
+      h('div', { class: 'scroll' }, h('table', null, h('thead', null, h('tr', null, h('th', null, 'Field'), h('th', null, 'How it is drawn'), h('th', null, 'Confidence'))),
+        h('tbody', null, (meta.assumptions || []).map((a) => h('tr', null, h('td', { class: 'mono nowrap' }, a.field), h('td', null, a.basis), h('td', null, a.confidence)))))),
+      h('h3', { class: 'h3' }, 'Published figures used'),
+      h('ul', { class: 'plain small' }, (meta.sources || []).map((s) => h('li', null, `${s.title}. ${s.publisher}, ${s.date}.`))),
+      p(OGL_LINE, ' ', h('a', { href: LICENCE_URL, target: '_blank', rel: 'noopener' }, 'Licence'), '.')),
+    sec('The rules',
+      p(`Pathways and checks come from tamarket/spec/pathways.json (spec version ${S.moveon.spec_version}), read from official guidance and legislation only. Each has a stable id, a condition a program can evaluate, the same condition in words, and its sources. The page never evaluates a condition: it shows the ids Python wrote into each record.`),
+      h('div', { class: 'scroll' }, h('table', null, h('thead', null, h('tr', null, h('th', null, 'Pathway'), h('th', null, 'Listed when'), h('th', null, 'Ends the main duty'))),
+        h('tbody', null, Object.entries(S.moveon.pathways).map(([pid, x]) => h('tr', null, h('td', null, x.title), h('td', null, textOf(pid + '.when').text),
+          h('td', null, x.ends_main_duty === true ? 'Yes, if the conditions are met' : x.ends_main_duty === false ? 'No' : 'Not by itself')))))),
+      h('h3', { class: 'h3' }, 'Statutory figures a plan may use'),
+      h('ul', { class: 'plain small' }, S.moveon.statutory_figures.map((f) => h('li', null, h('b', null, f.text), `: ${f.what}.`))),
+      h('h3', { class: 'h3' }, 'Sources'),
+      h('ul', { class: 'plain small' }, Object.entries(S.moveon.citations).map(([id, c]) => h('li', null, `${c.title}. ${c.publisher}, ${c.date}.`)))),
+    sec('The screen',
+      p(`The page runs these rules, in this order, on every plan before it is shown or saved (a draft from Claude, the template, or a person's edit), and again on every version it loads. The store does not run them${hosted ? '; the drafting function does, on every draft' : ''}. Rules: tamarket/spec/screen_rules.json, spec version ${S.spec.rules ? S.spec.rules.spec_version : 'not loaded'}. The page runs the JavaScript port, which passes the same shared cases as the Python reference.`),
+      h('ol', { class: 'plain small' }, SCREEN_STEPS.map(([k, d]) => h('li', null, h('b', null, k), `: ${d}`))),
+      p('It is a net, not a guarantee. It cannot catch a name written in lower case or at the start of a sentence, a figure from the record used in the wrong place, or advice that is wrong but worded as a suggestion. The officer reads every plan. The private deny list of names is never sent to a page; in the hosted version, the drafting function screens every draft with it as well.')),
+    sec('What Claude is given',
+      p(`The drafting prompt, with one synthetic record, its suggested routes and checks, any lessons in force for it (each approved by a second officer), any reviewer notes on its earlier versions and the plan schema filled in, sent as one message ${hosted ? 'by the drafting function, on the owner’s key' : 'on the viewer’s own Claude usage'}. Lessons and notes are marked as data. Nothing else: no web and no other records; the lessons are the only text from earlier reviews, and they can come from reviews of other households’ plans. A reply that is not one JSON object, or that fails the screen, is never shown.`),
+      S.spec.prompt ? h('details', { class: 'given' }, h('summary', null, 'The prompt file'), h('pre', null, S.spec.prompt)) : p('The prompt file did not load.')),
+    sec('Approvals and records',
+      p(`Four-eyes is ${fourEyes ? 'on' : 'off'}: ${fourEyes ? 'the person who saved a version cannot approve it, and an approval by that person does not count.' : 'a person can approve a version they saved; the caseload, the household and the plan pack mark it "One person", and turning four-eyes back on stops it counting.'} Only editors and the owner can approve, return, reject or reopen, and turning four-eyes off goes in the audit log.`),
+      canApprove() ? h('div', { class: 'row' }, h('button', { class: 'btn', onclick: () => setFourEyes(!fourEyes) }, fourEyes ? 'Turn four-eyes off' : 'Turn four-eyes on')) : null,
+      hosted
+        ? p('Versions, decisions and the audit log are rows the database writes: it sets every author and time from the signed-in person and the clock, checks each approval (the version, its SHA-256, and four-eyes), and writes the audit log itself, by triggers. An approval counts only when the plan text still matches the SHA-256 fingerprint the approver saw and someone else saved it, unless four-eyes is off at the time it is read.')
+        : p('Versions, decisions and the audit log are stored under each person’s own path (versions/<id>, decisions/<id>, audit/<id>), which the store lets only that person write, and decisions only at editor level. So the path, not a field anyone can type, says who saved and who approved. An approval counts only when the plan text still matches the SHA-256 fingerprint the approver saw and someone else saved it, unless four-eyes is off at the time it is read.'),
+      hosted
+        ? p('Limits [Certain]: no member can change or delete a version, a decision or the audit log; the status pointer, the checks and the progress record are shared records any Contributor can change, with every change audited; and whoever holds the database password can still change those, and could drop the triggers, so the audit log is as trustworthy as the people who hold it.')
+        : p('Limits [Certain]: the artifact’s owner can still write anywhere; times are set by the writer’s browser; a person can change or delete their own records; and the status pointer, the checks and the progress record are shared records any Contributor can change, so the audit log is the attested record of who did what. The hosted version narrows these [Likely; its database tested on a local Postgres, not on Supabase]: the database sets every author and time, checks approvals and writes the audit log, and no member can change or delete a version, a decision or the audit log. The pointer, the checks and the progress stay shared, with every change audited, and whoever holds the database password can still change them and could drop the triggers. It is built and tested here and not deployed (hosted/README.md).')),
+    sec('Build and data',
+      p(`Built from commit ${m.source_commit}${m.source_dirty ? ', with uncommitted changes' : ''}. Every file the page loads is checked against this manifest when it loads${S.integrity.bad.length || S.integrity.missing.length ? '; these did not match or did not load: ' + [...S.integrity.bad, ...S.integrity.missing].join(', ') : ', and all matched'}.`),
+      siteCopyLine() ? p(siteCopyLine()) : null,
+      h('ul', { class: 'plain small mono-list' }, Object.entries(m.files || {}).map(([k, sha]) => h('li', null, h('span', { class: 'mono' }, k), ' ', h('span', { class: 'muted mono' }, sha)))),
+      p(`${hosted ? 'The page loads one script from another site, the Supabase client, at a pinned version checked by its SHA-384, and nothing else: no fonts, no tracking.' : 'The page loads nothing from other sites: no fonts, no scripts, no tracking.'} Plan packs and audit exports carry the names of the staff who acted, as the accountability record.`)),
+    sec('Open items',
+      h('ul', { class: 'plain small' },
+        h('li', null, 'Private rented offers follow the Renters’ Rights Act 2025 as commenced on 1 May 2026 for tenancies that are not social housing, the earlier rules for social housing tenancies from private registered providers until the reforms start for them (expected October 2027), and the s.195A saving for offers accepted before 1 May 2026. How an offer made before 1 May 2026 but accepted after it is treated was not checked [Guessing].'),
+        h('li', null, 'Code chapter 21 is cited by title only, and chapter 22 by paragraphs 22.6, 22.7 and 22.48. The relief-stage final accommodation offer (s.193A) is not built.'),
+        h('li', null, 'Not yet in the checks: the temporary accommodation notification duty, whose guidance GOV.UK published on 1 September 2026, and the bar on finding care leavers within the corporate parenting duty intentionally homeless, in effect from 30 September 2026 by GOV.UK’s notice; both started in September 2026 [Likely: GOV.UK pages read on 22 October 2026, not the legislation].'),
+        h('li', null, 'The checks are a selection, not the full code: the officer applies the code itself.'),
+        h('li', null, 'The synthetic shapes marked [Guessing] above would be replaced by MHCLG’s live tables before the caseload is used for anything but testing.'),
+        h('li', null, hosted
+          ? 'Hosting: this is the hosted version, on Supabase in London and Netlify, with drafting through a server function on the owner’s key.'
+          : 'Hosting: the planner runs inside Claude for the pilot. The hosted version, on Supabase and Netlify with drafting through a server function on the owner’s key, is built and tested here (the database on a local Postgres, the page and the drafting function against fakes) and not deployed (hosted/README.md).'))));
+}
+
+/* ============================================================== the record page (phase 6)
+   A household reads as one record: a header with the next step, sections that fold away, and a
+   rail with its properties, follow-ups, references, add-ons and activity. A folded section stays
+   folded on this browser. */
+const SEC_CLOSED = new Set(local.get('sec_closed', []));
+// A section is a heading whose button folds its body (aria-expanded), so the heading keeps its role.
+function section(id, title, meta, body) {
+  const isOpen = !SEC_CLOSED.has(id);
+  const bodyEl = h('div', { class: 'sec-body', id: id + '-body', hidden: !isOpen }, body);
+  const btn = h('button', { type: 'button', class: 'sec-toggle', 'aria-expanded': String(isOpen), 'aria-controls': id + '-body' },
+    h('span', { class: 'sec-caret', 'aria-hidden': 'true' }), h('span', { class: 'sec-title' }, title), meta ? h('span', { class: 'sec-meta' }, meta) : null);
+  const d = h('section', { class: 'sec' + (isOpen ? ' open' : ''), id }, h('div', { class: 'sec-head' }, h('h2', { class: 'h2 sec-h' }, btn)), bodyEl);
+  d.setOpen = (v) => {
+    btn.setAttribute('aria-expanded', String(v)); bodyEl.hidden = !v; d.classList.toggle('open', v);
+    if (v) SEC_CLOSED.delete(id); else SEC_CLOSED.add(id);
+    local.set('sec_closed', [...SEC_CLOSED]);
+  };
+  btn.addEventListener('click', () => d.setOpen(bodyEl.hidden));
+  d.addEventListener('focusin', (e) => { if (e.target.matches('h2.sec-h')) d.setOpen(true); });
+  return d;
+}
+// Open a section, bring it into view and move focus to its heading, so a keyboard or screen reader user lands where the page did.
+const openSection = (id) => { const s = document.getElementById(id); if (s && s.setOpen) { s.setOpen(true); s.scrollIntoView({ block: 'start' }); const b = s.querySelector('.sec-toggle'); if (b) b.focus({ preventScroll: true }); } };
+function nextStep(r, w) {
+  const toPlan = () => openSection('sec-plan');
+  const v = currentVersion(r.id);
+  if (!canWrite()) return w.state === 'approved' ? { label: 'Read the approved plan', run: toPlan } : null;
+  if (w.state === 'new') return { label: 'Start the plan', run: toPlan, primary: true };
+  if (w.state === 'drafting') return { label: 'Continue the plan', run: toPlan, primary: true };
+  if (w.state === 'returned') return { label: v && v.author === myId() ? 'Revise the plan' : 'Read the note and revise', run: toPlan, primary: true };
+  if (w.state === 'submitted') return canApprove() && !(v && v.author === myId() && S.workflow.four_eyes !== false) ? { label: 'Review and decide', run: toPlan, primary: true } : { label: 'Waiting for an editor', run: toPlan };
+  if (w.state === 'approved') return { label: 'Record progress', run: () => startProgress(r), primary: true };
+  return { label: 'Read the decision', run: toPlan };
+}
+function fileActions(r, w) {
+  const F = S.files.get(r.id), who = F && F.assignee;
+  const ns = nextStep(r, w);
+  return h('div', { class: 'rec-actions' },
+    ns ? h('button', { class: 'btn' + (ns.primary ? ' primary' : ''), onclick: ns.run }, ns.label) : null,
+    canWrite() ? h('button', { class: 'btn', onclick: () => { S.taskForm = r.id; drawTaskSlots(r); const i = $('#task-text'); if (i) { i.scrollIntoView({ block: 'center' }); i.focus(); } } }, '+ Follow-up') : null,
+    !canWrite() ? null : who && who === myId() ? h('button', { class: 'btn', onclick: () => assign(r, null) }, 'Release')
+      : h('button', { class: 'btn', onclick: () => assign(r, myId()) }, who ? 'Take it over' : 'Take this household'),
+    h('span', { class: 'spacer' }),
+    h('button', { class: 'btn quiet small', onclick: () => go('type', r.accommodation_type) }, `Everyone in ${(TYPE_LABEL[r.accommodation_type] || r.accommodation).toLowerCase()} `, h('span', { 'aria-hidden': 'true' }, '→')));
+}
+function propertiesCard(r, w) {
+  const F = S.files.get(r.id), who = F && F.assignee, M = S.moves.get(r.id);
+  const open = tasksFor(r).filter((t) => !t.done && t.due).sort((a, b) => (a.due < b.due ? -1 : 1));
+  const row = (k, v) => [h('dt', null, k), h('dd', null, v)];
+  return h('div', { class: 'rail-card' },
+    h('h2', { class: 'rail-h' }, 'Properties'),
+    h('dl', { class: 'props' },
+      row('Plan', [stChip(w.state), selfChip(w)]),
+      row('Progress', M && M.stage ? STAGE_LABEL[M.stage] || M.stage : h('span', { class: 'muted' }, 'Nothing recorded')),
+      row('Officer', who ? whoLine(who) : h('span', { class: 'muted' }, 'Nobody yet')),
+      row('Next due', open.length ? dueChip(open[0].due) : h('span', { class: 'muted' }, 'No follow-up with a date')),
+      row('Accommodation', h('button', { class: 'linkish', onclick: () => go('type', r.accommodation_type) }, TYPE_LABEL[r.accommodation_type] || r.accommodation)),
+      row('Placed', `${dayLabel(r.placed_on)}${r.placed_in_another_district ? ', another district' : ''}`),
+      row('Clocks', clocksReady() ? h('button', { class: 'linkish', onclick: () => openSection('sec-clocks') }, clocksMeta(r)) : h('span', { class: 'muted' }, 'Not available')),
+      row('Routes out', r.eligible_pathways.length ? r.eligible_pathways.map((p) => h('button', { class: 'linkish', onclick: () => go('route', p.pathway_id) }, PATHWAY_SHORT[p.pathway_id] || pathwayTitle(p.pathway_id))) : h('span', { class: 'muted' }, 'None listed')),
+      row('Record', h('span', { class: 'mono small' }, `${r.id} (synthetic)`))));
+}
+function referencesCard() {
+  const refs = (S.spec.refs || []).filter((x) => /^https:\/\//.test(x.url));
+  return h('div', { class: 'rail-card', id: 'rail-refs' },
+    h('h2', { class: 'rail-h' }, 'References'),
+    refs.length ? h('ul', { class: 'refs' }, refs.map((x) => {
+      // Accepted monitoring items that touch this reference sit beside it, as a way into the Monitor page.
+      const notes = monAccepted().filter((it) => (it.tags.references || []).includes(x.id));
+      return h('li', null, h('a', { href: x.url, target: '_blank', rel: 'noopener noreferrer' }, x.title), h('span', { class: 'muted small' }, `${x.by} · read ${dayLabel(x.read)}`),
+        notes.map((it) => h('button', { class: 'linkish small mon-ref', onclick: () => { S.monScope = 'accepted'; go('monitor'); } }, `Monitoring: ${it.title} (${monDecision(it.id).grade})`)));
+    })) : h('p', { class: 'note' }, 'The reference list did not load.'));
+}
+
+/* ---------- drill-through: households by type of accommodation, or by route out */
+function groupRows(list) {
+  return h('div', { class: 'ov-list' }, list.map((r) => {
+    const w = workflowOf(r.id);
+    return h('button', { class: 'ov-row', onclick: () => go('file', r.id) },
+      h('span', { class: 'ov-main' }, h('span', { class: 'ov-title' }, `${r.id} · ${cap(r.household_type)}`), h('span', { class: 'ov-sub' }, `${TYPE_LABEL[r.accommodation_type] || r.accommodation} · ${r.weeks_in_ta} ${plural(r.weeks_in_ta, 'week', 'weeks')} in TA`)),
+      h('span', { class: 'ov-side' }, stChip(w.state), ...flagsOf(r).slice(0, 2).map((c) => h('span', { class: 'fchip warn' }, CHECK_LABEL[c] || c))));
+  }));
+}
+function groupView(v, eyebrow, title, lede, list) {
+  const open = list.flatMap((r) => tasksFor(r)).filter((t) => !t.done).length;
+  const approved = list.filter((r) => workflowOf(r.id).state === 'approved').length;
+  const weeks = list.map((r) => r.weeks_in_ta).sort((a, b) => a - b);
+  const median = weeks.length ? weeks[Math.floor((weeks.length - 1) / 2)] : 0;
+  swap(v,
+    h('div', { class: 'head' }, h('p', { class: 'eyebrow' }, eyebrow), h('h1', { class: 'h1' }, title), h('p', { class: 'lede' }, lede)),
+    h('div', { class: 'statline' },
+      h('span', null, h('b', null, String(list.length)), ' synthetic households'),
+      h('span', null, h('b', null, String(median)), ' weeks in TA, the middle value'),
+      h('span', null, h('b', null, String(approved)), ' plans approved'),
+      h('span', null, h('b', null, String(open)), ' open follow-ups')),
+    section(v.id + '-list', 'Households', null, groupRows(list)),
+    h('p', { class: 'house' }, 'Synthetic records only. Plans are suggestions for an officer to approve; each statutory decision is made and recorded outside the planner.'));
+}
+function drawType() {
+  const list = S.records.filter((r) => r.accommodation_type === S.groupKey);
+  if (!list.length) return go('caseload');
+  groupView($('#view-type'), 'Type of accommodation', TYPE_LABEL[S.groupKey] || S.groupKey, 'Every synthetic household placed in this type of temporary accommodation.', list);
+}
+function drawRoute() {
+  const list = S.records.filter((r) => r.eligible_pathways.some((p) => p.pathway_id === S.groupKey));
+  if (!list.length) return go('caseload');
+  groupView($('#view-route'), 'Route out', pathwayTitle(S.groupKey), 'Every synthetic household whose record lists this route out of temporary accommodation. A route listed is a route to check, not a decision.', list);
+}
+
+/* ---------- team and access */
+function drawTeam() {
+  const v = $('#view-team');
+  const roles = [
+    ['Viewer', 'Reads everything shared, and exports plan packs and the audit log.'],
+    ['Contributor', 'Also takes households, drafts and submits plans, works the checks and follow-ups, and records progress.'],
+    ['Editor', 'Also approves, returns, rejects and reopens plans, and turns four-eyes on or off.'],
+    ['Owner', 'Also adds people and changes their roles.'],
+  ];
+  const people = isDemo() ? Object.entries(DEMO_PEOPLE).map(([id, p]) => ({ id, role: p.role })) : [...S.members].map((id) => ({ id, role: id === S.me.id ? S.me.role : '' }));
+  if (!isDemo()) resolvePeople([...S.members]);
+  swap(v,
+    h('div', { class: 'head' }, h('h1', { class: 'h1' }, 'Team and access'), h('p', { class: 'lede' }, 'Who works in this planner, at which role, and what each role can do.')),
+    section('team-people', 'People', `${people.length}`, h('div', { class: 'scroll' }, h('table', null,
+      h('thead', null, h('tr', null, h('th', null, 'Person'), h('th', null, 'Role'), h('th', { class: 'num' }, 'Households held'), h('th', { class: 'num' }, 'Open follow-ups'))),
+      h('tbody', null, people.map((p) => h('tr', null, h('td', null, whoLine(p.id)), h('td', null, p.role || h('span', { class: 'muted' }, 'Not known')),
+        h('td', { class: 'num' }, String(S.records.filter((r) => (S.files.get(r.id) || {}).assignee === p.id).length)),
+        h('td', { class: 'num' }, String([...S.tasks.values()].filter((t) => !t.done && t.assignee === p.id).length)))))))),
+    section('team-roles', 'Roles', null, h('dl', { class: 'ov-dl' }, roles.map(([r, d]) => [h('dt', null, r), h('dd', null, d)]))),
+    section('team-invite', 'Adding people', null, h('p', { class: 'note' }, HOSTED ? 'The owner invites people by work email and sets each role in the members table; new sign-ups are off, so only invited people can sign in (hosted/README.md).'
+      : isDemo() ? 'In this demo the people and roles are fixed. In the hosted version the owner invites people by work email, sign-in is by a one-time code, and only invited people can sign in [Certain].'
+        : 'Inside Claude, access follows the artifact’s sharing levels: Viewer, Contributor, Editor and owner.')),
+    h('p', { class: 'house' }, 'Every change to a plan is in the audit log, with who made it and when.'));
+}
+
+/* ============================================================== follow-ups (phase 6)
+   Small jobs on a household's file, each with an owner and a due date: a shared record
+   (tasks/<id>) any Contributor can add to or tick off, audited like the checks. A follow-up is a
+   step in working the plan, never part of the plan and never a decision. */
+const todayIso = () => { const d = clockNow(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+const plusDays = (n) => { const d = clockNow(); d.setDate(d.getDate() + n); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+const MONS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+function dayLabel(iso) { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || '')); return m ? `${+m[3]} ${MONS[+m[2] - 1]} ${m[1]}` : ''; }
+function dueChip(iso) {
+  if (!iso) return h('span', { class: 'due' }, 'No date');
+  const t = todayIso(), soon = plusDays(7);
+  const k = iso < t ? 'late' : iso <= soon ? 'soon' : '';
+  return h('span', { class: 'due ' + k }, (iso < t ? 'Overdue · ' : iso === t ? 'Due today · ' : k === 'soon' ? 'Due soon · ' : 'Due ') + dayLabel(iso));
+}
+const TASK_TEMPLATES = [
+  { id: 'landlord', text: () => 'Chase the landlord or agent for an answer on the offer', due: () => plusDays(5) },
+  { id: 'viewing', text: () => 'Arrange a viewing of the offered home', due: () => plusDays(7) },
+  { id: 'affordability', text: () => 'Check the affordability assessment for the move', due: () => plusDays(7) },
+  { id: 'support', text: () => 'Agree the support worker’s part in the move', due: () => plusDays(10) },
+  { id: 'suitability', text: () => 'Review the placement’s suitability checks again', due: () => plusDays(14) },
+];
+function tasksFor(r) { return [...S.tasks.entries()].map(([id, d]) => Object.assign({ id }, d)).filter((t) => t.household_id === r.id).sort((a, b) => (a.done - b.done) || String(a.due || '9').localeCompare(String(b.due || '9')) || String(a.created_at).localeCompare(String(b.created_at))); }
+function myOpenTasks() { const me = myId(); return [...S.tasks.entries()].map(([id, d]) => Object.assign({ id }, d)).filter((t) => !t.done && t.assignee === me); }
+async function addTask(r, text, due, kind, assignee) {
+  if (!canWrite() || !String(text || '').trim()) return false;
+  let body = String(text).trim();
+  // Text a person writes goes through the notes screen: no names, places or providers. It reaches
+  // the audit log, the add-ons' previews and the search, so it is checked first.
+  if ((kind || 'custom') === 'custom') {
+    const n = screenNote(body);
+    if (n.problems.length) { S.taskMsg = n.problems.some((p) => p.rule === 'person') ? 'The follow-up may name a person, a place or a provider. Describe people by their role.' : 'The follow-up did not pass the screen: ' + [...new Set(n.problems.map((p) => RULE_TEXT[p.rule] || p.rule))].join('; ') + '.'; drawTaskSlots(r); return false; }
+    body = n.text;
+  }
+  S.taskMsg = '';
+  const doc = { household_id: r.id, text: body.slice(0, 240), due: due || null, assignee: assignee === undefined ? myId() : assignee, kind: kind || 'custom', done: false, created_by: myId(), created_at: nowIso() };
+  try {
+    await S.store.set('tasks', newId('task'), doc);
+    await audit('task_added', r.id, doc.text);
+    say('Follow-up added.');
+    return true;
+  } catch (e) { writeFailed(e, 'the follow-up'); return false; }
+}
+async function setTask(r, id, patch, quiet) {
+  if (!canWrite()) return;
+  const cur = S.tasks.get(id); if (!cur) return;
+  const next = Object.assign({}, patch);
+  if ('done' in patch) { next.done_by = patch.done ? myId() : null; next.done_at = patch.done ? nowIso() : null; }
+  try {
+    await S.store.update('tasks', id, next);
+    await audit('done' in patch ? (patch.done ? 'task_done' : 'task_reopened') : 'task_changed', r.id, cur.text);
+    if (!quiet && 'done' in patch && patch.done) say('Follow-up done.', { label: 'Undo', run: () => setTask(r, id, { done: false }, true) });
+  } catch (e) { writeFailed(e, 'the follow-up'); }
+}
+function peopleOptions(sel) {
+  const ids = isDemo() ? Object.keys(DEMO_PEOPLE).filter((id) => !DEMO_PEOPLE[id].view)
+    : [...S.members].filter((id) => { const m = S.memberInfo && S.memberInfo.get(id); return !m || (m.active !== false && m.role !== 'viewer'); });
+  resolvePeople(ids);
+  return [h('option', { value: '', selected: !sel }, 'Nobody'), ids.map((id) => h('option', { value: id, selected: id === sel }, person(id).name))];
+}
+function taskRow(r, t, opts) {
+  const editing = S.taskEdit === t.id, can = canWrite();
+  const fileLink = opts && opts.withFile ? h('button', { class: 'linkish small', onclick: () => go('file', r.id) }, `${r.id} · ${cap(r.household_type)}`) : null;
+  return h('li', { class: 'task' + (t.done ? ' done' : '') },
+    h('input', { type: 'checkbox', checked: !!t.done, disabled: !can, 'aria-label': `Done: ${r.id}, ${t.text}`, onchange: (e) => setTask(r, t.id, { done: e.target.checked }) }),
+    h('div', { class: 'task-main' },
+      h('span', { class: 'task-t' }, t.text),
+      h('span', { class: 'task-meta' }, fileLink, t.done ? h('span', { class: 'muted small' }, `Done by ${person(t.done_by).name}${t.done_at ? ', ' + stamp(t.done_at) : ''}`) : [dueChip(t.due), h('span', { class: 'muted small' }, t.assignee ? person(t.assignee).name : 'No owner')],
+        can && !t.done ? h('button', { class: 'linkish small', 'aria-expanded': String(editing), 'aria-label': `Change: ${r.id}, ${t.text}`, onclick: () => { S.taskEdit = editing ? null : t.id; refresh(); } }, editing ? 'Close' : 'Change') : null),
+      editing ? h('div', { class: 'task-edit' },
+        h('label', { class: 'field' }, 'Due', h('input', { type: 'date', value: t.due || '', 'aria-label': `Due date: ${r.id}, ${t.text}`, onchange: (e) => setTask(r, t.id, { due: e.target.value || null }) })),
+        h('label', { class: 'field' }, 'Owner', h('select', { 'aria-label': `Owner: ${r.id}, ${t.text}`, onchange: (e) => setTask(r, t.id, { assignee: e.target.value || null }) }, peopleOptions(t.assignee)))) : null));
+}
+function taskList(r) {
+  const list = tasksFor(r), open = list.filter((t) => !t.done), done = list.filter((t) => t.done);
+  resolvePeople(list.flatMap((t) => [t.assignee, t.done_by]).filter(Boolean));
+  return h('div', { id: 'task-list' },
+    h('div', { class: 'card-head' }, h('h2', { class: 'h2' }, 'Follow-ups'), h('span', { class: 'note' }, `${open.length} open`)),
+    open.length ? h('ul', { class: 'tasks' }, open.map((t) => taskRow(r, t))) : h('p', { class: 'note' }, canWrite() ? 'Nothing to follow up yet. Add the next steps for this household, each with an owner and a date.' : 'No open follow-ups.'),
+    done.length ? h('details', { class: 'given' }, h('summary', null, `${done.length} done`), h('ul', { class: 'tasks' }, done.map((t) => taskRow(r, t)))) : null);
+}
+function tasksCard(r) {
+  const list = tasksFor(r), formOpen = S.taskForm === r.id;
+  const form = !canWrite() ? null : formOpen ? h('form', { class: 'task-form', onsubmit: async (e) => {
+    e.preventDefault();
+    const el = e.target, fd = new FormData(el);
+    if (await addTask(r, fd.get('text'), fd.get('due') || null, 'custom', fd.get('owner') || null)) { const i = el.querySelector('#task-text'); if (i) { i.value = ''; i.focus(); } }
+  } },
+    h('span', { class: 'small muted' }, 'Common next steps, added with a date and you as owner:'),
+    h('div', { class: 'tpl' }, TASK_TEMPLATES.filter((tp) => !list.some((t) => !t.done && t.kind === tp.id)).map((tp) => h('button', { type: 'button', class: 'tpl-chip', onclick: () => addTask(r, tp.text(r), tp.due(), tp.id) }, '+ ' + tp.text(r)))),
+    h('label', { class: 'field' }, 'Or write one', h('input', { id: 'task-text', name: 'text', maxlength: '240', placeholder: 'What needs doing. No names, addresses or phone numbers.', autocomplete: 'off' })),
+    h('div', { class: 'row' },
+      h('label', { class: 'field' }, 'Due', h('input', { type: 'date', name: 'due', value: plusDays(7) })),
+      h('label', { class: 'field' }, 'Owner', h('select', { name: 'owner' }, peopleOptions(myId())))),
+    h('div', { id: 'task-msg-slot' }, S.taskMsg ? h('p', Object.assign({ class: 'task-msg' }, alertAttrs('task', S.taskMsg)), S.taskMsg) : null),
+    h('div', { class: 'row' }, h('button', { class: 'btn primary small', type: 'submit' }, 'Add'), h('button', { class: 'btn quiet small', type: 'button', onclick: () => { S.taskForm = null; S.taskMsg = ''; drawTaskSlots(r); } }, 'Done adding')))
+    : h('button', { class: 'btn small', onclick: () => { S.taskForm = r.id; drawTaskSlots(r); const i = $('#task-text'); if (i) i.focus(); } }, '+ Add a follow-up');
+  return h('div', { class: 'card', id: 'tasks-panel' }, taskList(r), h('div', { id: 'task-form-slot' }, form));
+}
+// Add-ons: where a deployment would send a household's follow-ups. Each shows what it would send;
+// this version connects nothing and sends nothing.
+const ADDONS = [
+  { id: 'hms', name: 'Housing management system', eg: 'the council’s own case system', does: 'Records the open follow-ups against the household’s case, by its reference.' },
+  { id: 'calendar', name: 'Calendar', eg: 'a shared or personal calendar', does: 'Puts each follow-up’s due date in a calendar, as an all-day entry.' },
+  { id: 'message', name: 'Email or team chat', eg: 'a colleague or a team channel', does: 'Sends a short summary of the follow-ups, never the plan’s text.' },
+];
+function addonPayload(id, r) {
+  const open = tasksFor(r).filter((t) => !t.done);
+  if (id === 'hms') return open.length ? open.map((t) => `${r.id}: ${t.text} (due ${t.due ? dayLabel(t.due) : 'no date'}; ${t.assignee ? 'has an owner' : 'no owner yet'})`).join('\n') : 'No open follow-ups to send.';
+  if (id === 'calendar') return open.filter((t) => t.due).length ? ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Move forward//demo//EN',
+    ...open.filter((t) => t.due).flatMap((t) => ['BEGIN:VEVENT', `UID:${t.id}@move-forward.demo`, `DTSTAMP:${nowIso().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z')}`, `DTSTART;VALUE=DATE:${t.due.replace(/-/g, '')}`, `SUMMARY:${t.text} (${r.id})`, 'END:VEVENT']), 'END:VCALENDAR'].join('\n') : 'No follow-up has a due date.';
+  return [`Subject: ${r.id}: ${open.length} open ${open.length === 1 ? 'follow-up' : 'follow-ups'}`, '', ...open.map((t) => `- ${t.text} (due ${t.due ? dayLabel(t.due) : 'no date'})`), '',
+    'Synthetic record. Plans are suggestions for an officer to approve.'].join('\n');
+}
+function addonsCard(r) {
+  return h('div', { class: 'card', id: 'addons-panel' },
+    h('div', { class: 'card-head' }, h('h2', { class: 'h2' }, 'Add-ons'), h('span', { class: 'note' }, 'none connected')),
+    h('ul', { class: 'addons' }, ADDONS.map((a) => {
+      const open = S.addonOpen === r.id + '/' + a.id;
+      return h('li', null,
+        h('div', { class: 'addon-top' }, h('span', null, h('b', null, a.name), h('span', { class: 'muted small' }, ` · ${a.eg}`)), h('span', { class: 'addon-st' }, 'Not connected')),
+        h('span', { class: 'small' }, a.does),
+        h('button', { class: 'btn quiet small', 'aria-expanded': String(open), onclick: () => { S.addonOpen = open ? null : r.id + '/' + a.id; drawTaskSlots(r); } }, open ? 'Hide the preview' : 'Preview what it would send'),
+        open ? h('pre', { class: 'addon-pre' }, addonPayload(a.id, r)) : null);
+    })),
+    h('p', { class: 'note' }, 'Demo: nothing is connected and nothing is sent. A deployment connects these to the council’s own systems, once the owner signs them off.'));
+}
+function drawTaskSlots(r) {
+  const slot = $('#slot-tasks'); if (!slot) return;
+  const ae = document.activeElement;
+  const typing = slot.contains(ae) && ae.matches('input:not([type="checkbox"]), select, textarea') && ae.closest('.task-form');
+  if (typing && $('#task-list')) { $('#task-list').replaceWith(taskList(r)); const m = $('#task-msg-slot'); if (m) swap(m, S.taskMsg ? h('p', Object.assign({ class: 'task-msg' }, alertAttrs('task', S.taskMsg)), S.taskMsg) : null); }
+  else swap(slot, tasksCard(r));
+  swap($('#slot-addons'), addonsCard(r));
+}
+function drawTasks() {
+  const v = $('#view-tasks');
+  const all = [...S.tasks.entries()].map(([id, d]) => Object.assign({ id }, d)).map((t) => Object.assign(t, { r: S.byId.get(t.household_id) })).filter((t) => t.r);
+  const scope = S.taskScope === 'all' ? 'all' : 'mine';
+  const pool = all.filter((t) => scope === 'all' || t.assignee === myId());
+  const open = pool.filter((t) => !t.done).sort((a, b) => String(a.due || '9').localeCompare(String(b.due || '9')));
+  const t0 = todayIso(), wk = plusDays(7);
+  const groups = [['Overdue', open.filter((t) => t.due && t.due < t0)], ['Due in the next seven days', open.filter((t) => t.due && t.due >= t0 && t.due <= wk)],
+    ['Later', open.filter((t) => t.due && t.due > wk)], ['No date', open.filter((t) => !t.due)]];
+  const done = pool.filter((t) => t.done).sort((a, b) => String(b.done_at).localeCompare(String(a.done_at))).slice(0, 30);
+  resolvePeople(pool.flatMap((t) => [t.assignee, t.done_by]).filter(Boolean));
+  const tab = (k, label, n) => h('button', { 'aria-pressed': String(scope === k), 'aria-label': label, onclick: () => { S.taskScope = k; drawTasks(); const b = document.querySelector(`#view-tasks .seg button[aria-label="${label}"]`); if (b) b.focus(); } }, `${label} (${n})`);
+  const block = (title, ts) => h('div', { class: 'card' }, h('div', { class: 'card-head' }, h('h2', { class: 'h2' }, title), h('span', { class: 'note' }, String(ts.length))), h('ul', { class: 'tasks wide' }, ts.map((t) => taskRow(t.r, t, { withFile: true }))));
+  swap(v,
+    h('div', { class: 'head' }, h('h1', { class: 'h1' }, 'Follow-ups'), h('p', { class: 'lede' }, 'Open follow-ups by when they are due: yours, or everyone’s on every household. Tick one off here or open the household.')),
+    h('div', { class: 'seg', role: 'group', 'aria-label': 'Whose follow-ups' }, tab('mine', 'Mine', all.filter((t) => !t.done && t.assignee === myId()).length), tab('all', 'Everyone’s', all.filter((t) => !t.done).length)),
+    open.length ? groups.filter(([, ts]) => ts.length).map(([title, ts]) => block(title, ts))
+      : h('div', { class: 'card' }, h('p', { class: 'note' }, scope === 'mine' ? 'Nothing open is yours. Follow-ups you own on any household appear here, overdue first.' : 'No household has an open follow-up. Add one from a household’s page.')),
+    done.length ? h('details', { class: 'given' }, h('summary', null, `${done.length} done recently`), h('ul', { class: 'tasks wide' }, done.map((t) => taskRow(t.r, t, { withFile: true })))) : null,
+    h('p', { class: 'house' }, 'Synthetic records only. A follow-up is a step in working a plan; each statutory decision is made and recorded outside the planner.'));
+}
+
+/* ============================================================== monitoring (phase 7)
+   Items from lawful public sources (monitor/sources.json): a release, a chapter of the code
+   updated, a new duty's guidance, a published ombudsman decision. scripts/monitor.py files them
+   after fd-core's checks (fdcore.monitor) and the build publishes them as data/monitor.json. Each
+   waits on the Monitor page for an officer to accept it, setting its grade on the six-by-six
+   scale, or to reject it with a reason; the decision is a shared record (monitor/<item id>),
+   audited. An accepted item shows on the rail of each household it touches and beside the
+   reference it touches. Nothing reaches a plan unaccepted, and drafting does not read items. */
+const MON_REJECT = [
+  ['not_relevant', 'Does not touch this planner’s checks'],
+  ['duplicate', 'Already held'],
+  ['superseded', 'Superseded by a later item'],
+  ['unreliable', 'Not reliable enough to act on'],
+  ['other', 'Other (see the note)'],
+];
+const MON_CLOCK = { s208: 'Notice to the receiving council (s.208)', child: 'Child’s notices (s.213AA)', bnb_family: 'Six weeks in B&B for a family', review: 'Review decision (eight weeks)' };
+const MON_TOPIC = { release: 'Statistics release', guidance: 'Guidance', legislation: 'Legislation', ombudsman: 'Ombudsman decision', notices: 'Notices',
+  suitability: 'Suitability', reviews: 'Reviews', private_renting: 'Private renting' };
+const monItems = () => (S.mon && Array.isArray(S.mon.items) ? S.mon.items : []);
+const monDecision = (id) => S.monitor.get(id) || null;
+const monWaiting = () => monItems().filter((it) => !monDecision(it.id)).length;
+function gradeWords(g) {
+  const G = S.mon && S.mon.grades;
+  if (!G || !/^[A-F][1-6]$/.test(String(g || ''))) return String(g || '');
+  return `${g}: ${G.reliability[g[0]].toLowerCase()} source; ${G.credibility[g[1]].toLowerCase()}`;
+}
+const checkName = (id) => CHECK_LABEL[id] || (textOf(id).text !== id ? textOf(id).text.slice(0, 80) + (textOf(id).text.length > 80 ? '…' : '') : id);
+// The households an item touches: through a check, a route or a clock. A reference alone touches none.
+function monTouches(it, r) {
+  const t = it.tags || {};
+  const checks = new Set([...(r.suitability_checks || []), ...(r.eligible_pathways || []).flatMap((p) => p.officer_checks || [])]);
+  if ((t.checks || []).some((c) => c.startsWith('general.') || checks.has(c))) return true;
+  if ((t.pathways || []).some((p) => (r.eligible_pathways || []).some((x) => x.pathway_id === p))) return true;
+  for (const k of t.clocks || []) {
+    if (k === 's208' && r.placed_in_another_district) return true;
+    if (k === 'bnb_family' && (r.suitability_checks || []).includes('bnb-family-limit')) return true;
+    if (k === 'child' && clocksReady() && TaClocks.childScope(r, CLK()).applies) return true;
+    if (k === 'review' && reviewsFor(r).length) return true;
+  }
+  return false;
+}
+const monHouseholds = (it) => S.records.filter((r) => monTouches(it, r));
+const monAccepted = () => monItems().filter((it) => { const d = monDecision(it.id); return d && d.decision === 'accepted'; });
+async function decideItem(it, decision, grade, reason, note) {
+  if (!canWrite()) return false;
+  const F = S.monForm[it.id] || (S.monForm[it.id] = {});
+  let text = '';
+  if (String(note || '').trim()) {
+    const n = screenNote(String(note).slice(0, 240));
+    if (n.problems.length) { F.msg = 'The note did not pass the screen: ' + n.problems.map((p) => RULE_TEXT[p.rule] || p.rule).join('; ') + '.'; refresh(); return false; }
+    text = n.text;
+  }
+  if (decision === 'accepted' && !/^[A-F][1-6]$/.test(String(grade))) { F.msg = 'Choose a grade.'; refresh(); return false; }
+  if (decision === 'rejected' && !MON_REJECT.some(([k]) => k === reason)) { F.msg = 'Choose a reason.'; refresh(); return false; }
+  if (decision === 'rejected' && reason === 'other' && !text) { F.msg = 'Say why in the note.'; refresh(); return false; }
+  const had = monDecision(it.id);
+  const doc = { item_id: it.id, decision, grade: decision === 'accepted' ? grade : null, reason: decision === 'rejected' ? reason : null, note: text, by: myId(), at: nowIso() };
+  try {
+    await upsert('monitor', it.id, doc);
+    await audit(had ? 'monitor_changed' : decision === 'accepted' ? 'monitor_accepted' : 'monitor_rejected', null,
+      `${it.id}: ${decision === 'accepted' ? 'accepted, ' + grade : 'rejected, ' + (MON_REJECT.find(([k]) => k === reason) || [, reason])[1]}`);
+    delete S.monForm[it.id];
+    if (S.monEdit === it.id) S.monEdit = null;
+    S.monKeep.add(it.id);
+    S.focusNext = 'mon-st-' + it.id.slice(4);
+    say(decision === 'accepted' ? 'Item accepted.' : 'Item rejected.');
+    refresh();
+    return true;
+  } catch (e) { writeFailed(e, 'the decision on the item'); return false; }
+}
+function monForm(it) {
+  const F = S.monForm[it.id] || (S.monForm[it.id] = { grade: it.grade_proposed, reason: '', note: '', msg: '' });
+  const grades = [];
+  for (const a of 'ABCDEF') for (const b of '123456') grades.push(a + b);
+  return h('div', { class: 'mon-form', dataset: { mode: 'edit' } },
+    h('div', { class: 'row' },
+      h('label', { class: 'field' }, 'Grade', h('select', { 'aria-label': `Grade for ${it.title}`, onchange: (e) => { F.grade = e.target.value; } },
+        grades.map((g) => h('option', { value: g, selected: F.grade === g }, gradeWords(g) + (g === it.grade_proposed ? ' (proposed)' : ''))))),
+      h('button', { class: 'btn primary small', onclick: () => decideItem(it, 'accepted', F.grade, null, F.note) }, 'Accept')),
+    h('div', { class: 'row' },
+      h('label', { class: 'field' }, 'Or reject it', h('select', { 'aria-label': `Reason to reject ${it.title}`, onchange: (e) => { F.reason = e.target.value; } },
+        h('option', { value: '', selected: !F.reason }, 'Choose a reason'), MON_REJECT.map(([k, l]) => h('option', { value: k, selected: F.reason === k }, l)))),
+      h('button', { class: 'btn small', onclick: () => decideItem(it, 'rejected', null, F.reason, F.note) }, 'Reject')),
+    h('label', { class: 'field' }, 'Note (optional, 240 characters at most)', h('textarea', { rows: 2, maxlength: '240', 'aria-label': `Note on ${it.title}`, placeholder: 'No names of people, councils or firms.', oninput: (e) => { F.note = e.target.value; } }, F.note || '')),
+    F.msg ? h('p', Object.assign({ class: 'task-msg' }, alertAttrs('mon:' + it.id, F.msg)), F.msg) : null,
+    monDecision(it.id) ? h('button', { class: 'btn quiet small', onclick: () => { delete S.monForm[it.id]; S.monEdit = null; refresh(); } }, 'Cancel') : null);
+}
+function monCard(it) {
+  const src = (S.mon.sources || {})[it.source] || { name: it.source };
+  const d = monDecision(it.id), t = it.tags || {}, hh = monHouseholds(it);
+  if (d) resolvePeople([d.by]);
+  const editing = !d || S.monEdit === it.id;
+  const refTitle = (id) => ((S.spec.refs || []).find((x) => x.id === id) || { title: id }).title;
+  const touches = [
+    ...(t.checks || []).map((c) => ['Check', checkName(c)]), ...(t.pathways || []).map((p) => ['Route', PATHWAY_SHORT[p] || p]),
+    ...(t.clocks || []).map((k) => ['Clock', MON_CLOCK[k] || k]), ...(t.references || []).map((x) => ['Reference', refTitle(x)]),
+  ];
+  return h('article', { class: 'card mon-item', id: 'mon-' + it.id.slice(4), dataset: { item: it.id } },
+    h('div', { class: 'mon-head' },
+      h('h2', { class: 'h3 mon-title' }, it.title),
+      h('span', { class: 'st ' + (!d ? 'st-submitted' : d.decision === 'accepted' ? 'st-approved' : 'st-rejected'), id: 'mon-st-' + it.id.slice(4), tabindex: '-1' },
+        !d ? 'Waiting' : d.decision === 'accepted' ? 'Accepted · ' + d.grade : 'Rejected')),
+    h('p', { class: 'muted small mon-meta' }, h('a', { href: it.url, target: '_blank', rel: 'noopener noreferrer' }, src.name), ` · ${src.publisher || ''} · published ${dayLabel(it.published)}${it.updated ? ` · updated ${dayLabel(it.updated)}` : ''} · read ${dayLabel(String(it.retrieved_at).slice(0, 10))}`),
+    h('p', { class: 'muted small mon-terms' }, 'Terms: ', src.terms_url ? h('a', { href: src.terms_url, target: '_blank', rel: 'noopener noreferrer' }, src.terms_note || 'the source’s terms') : (src.terms_note || 'not given')),
+    h('p', null, it.summary),
+    h('p', { class: 'small' }, h('b', null, 'Proposed grade: '), gradeWords(it.grade_proposed)),
+    (it.tags.topics || []).length ? h('div', { class: 'chips' }, it.tags.topics.map((x) => h('span', { class: 'fchip' }, MON_TOPIC[x] || x))) : null,
+    touches.length ? h('ul', { class: 'plain small mon-touch' }, touches.map(([k, v]) => h('li', null, h('span', { class: 'muted' }, k + ': '), v)),
+      h('li', null, h('span', { class: 'muted' }, 'Households: '), hh.length ? `${hh.length} on this caseload` : 'none through a check, route or clock')) : null,
+    h('details', { class: 'given' }, h('summary', null, 'The original'),
+      h('p', { class: 'small' }, h('b', null, it.title_original)), h('blockquote', { class: 'mon-quote' }, it.excerpt_original),
+      h('p', { class: 'muted small' }, `${it.translated_by === 'not translated' ? 'In English, not translated' : 'Translated by ' + it.translated_by}. SHA-256 of the passage ${String(it.excerpt_sha256 || '').slice(0, 16)}…`)),
+    d && !editing ? h('div', { class: 'decision' }, h('b', null, d.decision === 'accepted' ? `Accepted, ${gradeWords(d.grade)}` : `Rejected: ${(MON_REJECT.find(([k]) => k === d.reason) || [, d.reason])[1]}`),
+      h('span', null, `By ${person(d.by).name}, ${stamp(d.at)}.`), d.note ? h('span', null, d.note) : null,
+      canWrite() ? h('button', { class: 'btn quiet small', onclick: () => { S.monEdit = it.id; S.monForm[it.id] = { grade: d.grade || it.grade_proposed, reason: d.reason || '', note: d.note || '', msg: '' }; refresh(); } }, 'Change') : null) : null,
+    editing && canWrite() ? monForm(it) : (!d ? h('p', { class: 'note' }, 'An officer accepts or rejects it.') : null));
+}
+function drawMonitor() {
+  const v = $('#view-monitor');
+  // A decision form someone is filling in is not redrawn under them.
+  if (v.contains(document.activeElement) && document.activeElement.closest('.mon-form') && document.activeElement.matches('textarea, select')) return;
+  if (!S.mon) { swap(v, h('div', { class: 'head' }, h('h1', { class: 'h1' }, 'Monitor')), h('p', { class: 'note' }, S.monBad ? 'The monitoring files do not match the build’s manifest, so no item is shown. Plans are not affected.' : 'The monitoring items did not load in this view.')); return; }
+  const scope = S.monScope || 'waiting';
+  const inScope = (it) => { const d = monDecision(it.id); return scope === 'waiting' ? !d : scope === 'accepted' ? d && d.decision === 'accepted' : d && d.decision === 'rejected'; };
+  const pool = monItems().filter((it) => inScope(it) || S.monKeep.has(it.id));
+  const n = (k) => monItems().filter((it) => { const d = monDecision(it.id); return k === 'waiting' ? !d : d && d.decision === k; }).length;
+  const tab = (k, label) => h('button', { 'aria-pressed': String(scope === k), onclick: () => { S.monScope = k; S.monKeep.clear(); drawMonitor(); } }, `${label} (${n(k)})`);
+  swap(v,
+    h('div', { class: 'head' }, h('p', { class: 'eyebrow' }, 'Work'), h('h1', { class: 'h1' }, 'Monitor'),
+      h('p', { class: 'lede' }, `What changed in the sources this planner watches: releases, the code of guidance, legislation, ombudsman decisions and new duties. Each item waits for an officer to accept it, setting its grade, or reject it. Sources read on ${dayLabel(S.mon.read_on)}.`),
+      siteCopyLine() ? h('p', { class: 'note', id: 'mon-site-copy' }, siteCopyLine()) : null),
+    h('div', { class: 'seg', role: 'group', 'aria-label': 'Which items' }, tab('waiting', 'Waiting'), tab('accepted', 'Accepted'), tab('rejected', 'Rejected')),
+    pool.length ? pool.map(monCard) : h('div', { class: 'card' }, h('p', { class: 'note' }, scope === 'waiting' ? 'Nothing is waiting. New items arrive after a collection run (monitor/RUNBOOK.md).' : 'None yet.')),
+    h('div', { class: 'card' }, h('h2', { class: 'h2' }, 'The grade'),
+      h('p', { class: 'note' }, 'Two parts, long used in intelligence work: how reliable the source is, from A (completely reliable) to F (cannot be judged), and how credible the information is, from 1 (confirmed by other sources) to 6 (cannot be judged). The collection run proposes one; the officer who accepts the item sets it.'),
+      h('p', { class: 'note' }, 'Sources: ', Object.values(S.mon.sources || {}).map((s, i) => [i ? '; ' : '', h('a', { href: s.url, target: '_blank', rel: 'noopener noreferrer' }, s.name), ` (${s.publisher}, standing grade ${s.reliability})`]), '.')),
+    h('p', { class: 'house' }, 'Monitoring items are notes for an officer, never decisions. Nothing reaches a plan unaccepted. Synthetic records only.'));
+}
+// A site copy of the build (its manifest has site_copy, written by the site build with the new
+// SHA-256 of each file it changed): what it changed, and how many monitoring items it leaves off and why.
+function siteCopyLine() {
+  const sc = S.manifest && S.manifest.site_copy;
+  if (!sc || typeof sc !== 'object') return '';
+  const n = Number(sc.monitor_items_left_off) || 0;
+  const changed = Array.isArray(sc.changed) && sc.changed.length ? `This copy of the build was changed for the site (${sc.changed.map(String).join(', ')}). ` : 'This is a site copy of the build. ';
+  return changed + (n ? `It leaves off ${n} monitoring ${n === 1 ? 'item' : 'items'}${sc.why ? ': ' + String(sc.why).trim().replace(/\.$/, '') : ''}.` : 'It leaves off no monitoring item.');
+}
+// The household's rail: the accepted items that touch it.
+function monitoringCard(r) {
+  const list = monAccepted().filter((it) => monTouches(it, r));
+  if (!list.length) return null;
+  return h('div', { class: 'rail-card', id: 'rail-monitor' },
+    h('h2', { class: 'rail-h' }, 'Monitoring notes'),
+    h('ul', { class: 'refs' }, list.map((it) => { const d = monDecision(it.id); return h('li', null, h('a', { href: it.url, target: '_blank', rel: 'noopener noreferrer' }, it.title),
+      h('span', { class: 'muted small' }, `${gradeWords(d.grade)} · published ${dayLabel(it.published)}${it.updated ? `, updated ${dayLabel(it.updated)}` : ''}`)); })),
+    h('button', { class: 'btn quiet small', onclick: () => go('monitor') }, 'Open the Monitor page →'));
+}
+
+/* ============================================================== notices and statutory clocks (phase 6.5)
+   Four clocks the law sets, worked out by TaClocks (tamarket/spec/clocks.mjs, the port of
+   tamarket/clocks.py) from the rules in spec/clocks.json: the s.208 notice to the council where a
+   household is placed, the s.213AA notices for a child, 6 weeks in B&B for a family, and the
+   decision on a review. The planner drafts each notice with placeholders for personal details and
+   records what the officer says was done, with who and when. It never sends anything. */
+const NOTICE_METHODS = ['Letter', 'Email', 'Secure online form', 'By hand', 'Other'];
+const BODY_KINDS = ['gp', 'health_visiting', 'education'];
+const CLK = () => (S.spec.clocks && S.spec.clocks.rules) || null;
+const clocksReady = () => !!(window.TaClocks && CLK());
+// s.208: <household>~s208. s.213AA is for each child: <household>~c<n>~child (the answer for child n)
+// and <household>~c<n>~child-<body> (that child's notice to one body). Children are numbered on the
+// record, never named.
+const noticeKey = (hid, kind, n) => (n ? `${hid}~c${n}~${kind}` : `${hid}~${kind}`);
+const noticeOf = (hid, kind, n) => S.notices.get(noticeKey(hid, kind, n)) || null;
+const bodyLabel = (k) => (CLK() && CLK().child.body_labels[k]) || k;
+// The label inside a sentence: lower case, except the initials in "GP".
+const bodyText = (k) => { const l = bodyLabel(k); return /^[A-Z]{2}/.test(l) ? l : l.charAt(0).toLowerCase() + l.slice(1); };
+const PH = (what) => `[${what}: added in a council deployment]`;
+function s208State(r) {
+  if (!clocksReady()) return { applies: false };
+  const N = noticeOf(r.id, 's208');
+  const sent = N && N.status === 'sent' ? N.sent_on : r.s208_notice_sent_on || null;
+  return Object.assign(TaClocks.s208(r, todayIso(), sent, CLK()), { sent_on: sent, recorded: N, history: !N && !!r.s208_notice_sent_on });
+}
+function childState(r) {
+  if (!clocksReady()) return { applies: false };
+  const scope = TaClocks.childScope(r, CLK());
+  if (!scope.applies) return { applies: false, reason: scope.reason, children: scope.children };
+  const t = todayIso();
+  const kids = [];
+  const max = CLK().child.max_children || 9;
+  for (let n = 1; n <= Math.min(scope.children, max); n++) {
+    const C = noticeOf(r.id, 'child', n);
+    const agreed = !!C && C.status === 'agreed';
+    const answered = !!C && (C.status === 'agreed' || C.status === 'refused');
+    // The answer is kept body by body (s.213AA(2)); a record without the bodies listed covered every body.
+    const yes = agreed ? (Array.isArray(C.agreed_bodies) && C.agreed_bodies.length ? C.agreed_bodies : BODY_KINDS) : [];
+    const bodies = BODY_KINDS.map((k) => {
+      const N = noticeOf(r.id, 'child-' + k, n);
+      const info = N && N.info_on ? N.info_on : null;
+      // Each body's 14 days run from the latest of the agreement, the information about that body
+      // and the placement (s.213AA(4)).
+      const due = agreed && info ? TaClocks.childDue(r.placed_on, C.agreed_on, info, CLK()) : null;
+      const state = !answered ? 'waiting' : !yes.includes(k) ? 'declined' : N && N.status === 'none' ? 'none'
+        : N && N.status === 'sent' ? (due && N.sent_on > due ? 'sent_late' : 'sent_on_time')
+        : !due ? 'no_info' : t > due ? 'overdue' : 'due';
+      // A notice is not dated before the placement (it says the child is housed), the agreement or
+      // that body's information; the database checks the last two.
+      const sendFrom = [r.placed_on, C && C.agreed_on, info].filter(Boolean).sort().at(-1);
+      return { kind: k, N, state, agreed: yes.includes(k), due, info, sendFrom };
+    });
+    const step = !C ? 'ask' : C.status === 'asked' ? 'answer' : C.status === 'refused' ? 'refused'
+      : bodies.every((b) => b.state === 'declined' || b.state === 'none' || b.state.startsWith('sent')) ? 'done' : 'notify';
+    // A 16 or 17 year old applicant is child 1, and is asked instead of a parent (s.213AA(3)).
+    const applicant = scope.young_applicant && n === 1;
+    kids.push({ n, consent: C, bodies, step, applicant, asks: applicant ? 'the applicant' : 'the parent' });
+  }
+  const step = kids.every((k) => k.step === 'done' || k.step === 'refused') ? 'done' : kids.some((k) => k.step === 'ask') ? 'ask' : 'notify';
+  return { applies: true, reason: scope.reason, children: kids.length, onRecord: scope.children, young: scope.young_applicant, kids, step,
+    bodies: kids.flatMap((k) => k.bodies) };
+}
+const reviewsFor = (r) => [...S.reviews.entries()].map(([id, d]) => Object.assign({ id }, d)).filter((v) => v.household_id === r.id).sort((a, b) => String(b.requested_on).localeCompare(String(a.requested_on)));
+const reviewClock = (v) => TaClocks.review(v.requested_on, todayIso(), v.decided_on || null, v.agreed_to || null, CLK());
+function bnbState(r) {
+  if (!clocksReady()) return { applies: false };
+  const M = S.moves.get(r.id);
+  const out = TaClocks.bnb(r, todayIso(), CLK());
+  return Object.assign(out, { moved: !!(M && M.stage === 'moved') });
+}
+// Everything a clock says needs doing now, for the Compliance at risk page and its count.
+function complianceItems() {
+  if (!clocksReady()) return [];
+  const out = [];
+  for (const r of S.records) {
+    const F = S.files.get(r.id), owner = (F && F.assignee) || null;
+    const a = s208State(r);
+    if (a.applies && (a.state === 'overdue' || a.state === 'due')) out.push({ r, key: 's208', what: 'Notice to the council where the household is placed (s.208)', due: a.due, state: a.state, owner });
+    const b = childState(r);
+    // One item for each child and body: a household leaves the page only when every child's notices are done.
+    if (b.applies) for (const k of b.kids) {
+      const who = childName(k, b.children);
+      if (k.step === 'ask') out.push({ r, key: `c${k.n}-ask`, what: `Ask ${k.asks} about telling ${who === 'the applicant' ? 'their' : who + '’s'} GP practice, health visiting service and school (s.213AA)`, due: null, state: 'start', owner });
+      // No clock runs before the answer and a body's information, so these wait on the household,
+      // outside the count; they keep the household on the page until every child is done.
+      if (k.step === 'answer') out.push({ r, key: `c${k.n}-answer`, what: `${cap(who)}: waiting for the answer (s.213AA)`, due: null, state: 'wait', chip: 'waiting', owner });
+      for (const x of k.bodies) {
+        if (x.state === 'overdue' || x.state === 'due') out.push({ r, key: `c${k.n}-${x.kind}`, what: `${cap(who)}: notice to the ${bodyText(x.kind)} (s.213AA)`, due: x.due, state: x.state, owner });
+        if (x.state === 'no_info') out.push({ r, key: `c${k.n}-${x.kind}-info`, what: `${cap(who)}: waiting for the information about the ${bodyText(x.kind)} (s.213AA)`, due: null, state: 'wait', chip: 'no_info', owner });
+      }
+    }
+    const c = bnbState(r);
+    if (c.applies && !c.moved && c.state !== 'later') out.push({ r, key: 'bnb', what: 'A family in B&B: move by the last day of 6 weeks (SI 2003/3326)', due: c.limit, state: c.state === 'past' ? 'overdue' : 'due', chip: c.state, pre: 'move by', owner });
+    for (const v of reviewsFor(r)) {
+      const k = reviewClock(v);
+      if (!v.decided_on && k.state !== 'later') out.push({ r, key: 'review~' + v.id, what: 'Decision on the review (SI 2018/223, reg. 9)', due: k.due, state: k.state, owner: v.assignee || owner });
+    }
+  }
+  return out;
+}
+// A child by number on the record, never by name; a 16 or 17 year old applicant is "the applicant".
+const childName = (k, total) => (k.applicant ? 'the applicant' : total > 1 ? `child ${k.n}` : 'the child');
+const riskCount = () => complianceItems().filter((x) => x.state === 'overdue' || x.state === 'due').length;
+const CLOCK_WORD = { overdue: 'Overdue', due: 'Due', start: 'To start', sent_on_time: 'Sent on time', sent_late: 'Sent late', none: 'No such body', declined: 'Not agreed: no notice', waiting: 'Waits on the answer', no_info: 'Waits on the information about this body', later: 'Not yet due', soon: 'Within 14 days', past: '6 weeks reached', not_applicable: 'Does not apply', decided: 'Decided on time', decided_late: 'Decided late' };
+const clockChip = (state, iso, pre) => h('span', { class: 'due ' + (state === 'overdue' || state === 'past' || state === 'sent_late' || state === 'decided_late' ? 'late' : state === 'due' || state === 'soon' ? 'soon' : '') },
+  (CLOCK_WORD[state] || state) + (iso ? ' · ' + (pre ? pre + ' ' : '') + dayLabel(iso) : ''));
+
+async function saveNotice(r, kind, data, action, detail, n) {
+  if (!canWrite()) return false;
+  try {
+    await S.store.set('notices', noticeKey(r.id, kind, n), Object.assign({ household_id: r.id, kind, child_no: n || null }, data, { recorded_by: myId(), recorded_at: nowIso() }));
+    await audit(action, r.id, detail);
+    return true;
+  } catch (e) { writeFailed(e, 'the notice'); return false; }
+}
+// A date the officer gives: today or earlier, and not before the date given as after, when there is one.
+function dateProblem(iso, r, after) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(iso || ''))) return 'Give a date.';
+  if (iso > todayIso()) return 'The date cannot be in the future.';
+  if (after && iso < after) return `The date cannot be before ${dayLabel(after)}.`;
+  return '';
+}
+// A draft is the notice, then notes for the officer that are not part of it.
+const NOTES_HEAD = 'Notes for the officer (not part of the notice):';
+const fillDraft = (line) => String(line).replace(/\{([^}]+)\}/g, (m, what) => PH(what));
+function noticeDraft(r, kind, opts) {
+  const R = CLK(), fn = TYPE_LABEL[r.accommodation_type] || r.accommodation;
+  const others = r.household_size - 1;
+  if (kind === 's208') return [
+    `Notice under section 208 of the Housing Act 1996`, '',
+    `To: the housing authority for the district where the accommodation is. ${PH('receiving council')}`,
+    `Applicant: ${PH('applicant’s name')} (planner record ${r.id}, synthetic)`,
+    `Other people who normally live with the applicant as members of the family, or might reasonably be expected to: ${others} (${r.adults - 1 > 0 ? `${r.adults - 1} adult${r.adults - 1 > 1 ? 's' : ''}` : 'no other adult'}${r.children ? `, ${r.children} ${plural(r.children, 'child', 'children')}` : ''})`,
+    `Address of the accommodation: ${PH('address')} (${fn.toLowerCase()})`,
+    `Date the accommodation was made available: ${dayLabel(r.placed_on)}`,
+    `Function under Part 7 being discharged: ${PH('the duty, for example section 193(2)')}`, '',
+    NOTES_HEAD,
+    `- The notice must be in writing and given within 14 days beginning with the day the accommodation was made available: by ${dayLabel(TaClocks.lastDay(r.placed_on, R.s208.days))}.`,
+    '- Contents and time limit: ' + R.s208.citation + '.',
+    '- Drafted by the planner on a synthetic record. The officer checks it, completes the details and sends it through the council’s own route.'].join('\n');
+  // s.213AA: built only from spec/clocks.json child.contents, so the draft cannot drift from what
+  // the guidance lists for each body. No child count and no planner record in the notice: a
+  // council reference only (the child's number stays on the planner's screens and the file name).
+  const b = kind.replace('child-', ''), C = R.child.contents[b], young = !!(opts && opts.applicant);
+  return [`Notice under section 213AA of the Housing Act 1996`, '',
+    `To: ${bodyLabel(b)}. ${PH('name and address of the ' + (b === 'gp' ? 'practice' : b === 'health_visiting' ? 'service' : 'school or institution'))}`,
+    ...C.notice.map((x) => fillDraft(young && x.draft_applicant ? x.draft_applicant : x.draft)), '',
+    NOTES_HEAD,
+    ...C.officer_notes.map((x) => '- ' + x),
+    // Why each line of the notice is there, as the spec gives it: the guidance, the section, or the
+    // planner's reading, tagged.
+    '- Why each line is there:',
+    ...C.notice.map((x) => `  - ${fillDraft(young && x.draft_applicant ? x.draft_applicant : x.draft).split(':')[0]}: ${x.basis}.`),
+    `- Agreed by ${young ? 'the applicant (16 or 17)' : 'the parent'}, recorded in the planner.`,
+    `- Law: ${R.child.citation}.${b === 'education' ? '' : ` Guidance quoted: ${R.child.contents_source.title}.`}`,
+    '- Drafted by the planner on a synthetic record. The officer checks it, completes the details and sends it through the council’s own route.'].join('\n');
+}
+async function saveDraftFile(r, kind, opts) {
+  if (!S.caps.downloads) return;
+  Timing.start('notices', r.id);
+  try {
+    await S.caps.downloads.save({ filename: `${r.id}-${opts && opts.n ? 'c' + opts.n + '-' : ''}${kind}-notice-draft.txt`, data: noticeDraft(r, kind, opts) + '\n' });
+  } catch (e) { if (e && e.code !== 'declined') banner('dl', 'warn', 'The file could not be saved from this view.'); }
+}
+function sentForm(r, kind, label, opts) {
+  const n = (opts && opts.n) || null, uk = r.id + '/' + (n ? 'c' + n + '/' : '') + kind;
+  const ui = S.noticeUi[uk] || (S.noticeUi[uk] = { date: todayIso(), method: NOTICE_METHODS[0], msg: '' });
+  const msg = msgBox('notice:' + uk, ui);
+  // s.208: not before the accommodation was made available. A child's notice: not before the
+  // agreement or the information about that body (s.213AA(4)), as the database checks.
+  const from = opts && 'from' in opts ? opts.from : r.placed_on;
+  const keep = (opts && opts.keep) || {};
+  const save = async (status) => {
+    const p = status === 'sent' ? dateProblem(ui.date, r, from) : '';
+    if (p) { msg.say(p); return; }
+    const ok = await saveNotice(r, kind, Object.assign({}, keep, status === 'sent' ? { status: 'sent', sent_on: ui.date, method: ui.method } : { status: 'none', sent_on: null, method: null }),
+      'notice_recorded', status === 'sent' ? `${label}: sent ${dayLabel(ui.date)}, ${ui.method.toLowerCase()}` : `${label}: no such body`, n);
+    if (ok) { delete S.noticeUi[uk]; S.focusNext = kind === 's208' ? 'clock-s208-h' : `clock-child-h${n}`; say(status === 'sent' ? 'Recorded as sent.' : 'Recorded.'); refresh(); }
+  };
+  return h('div', { class: 'notice-form' },
+    h('label', { class: 'field' }, 'Sent on', h('input', { type: 'date', value: ui.date, max: todayIso(), min: from || undefined, 'aria-label': `Date sent: ${label}`, oninput: (e) => { ui.date = e.target.value; }, onchange: (e) => { ui.date = e.target.value; Timing.start('notices', r.id); } })),
+    h('label', { class: 'field' }, 'How', h('select', { 'aria-label': `How it was sent: ${label}`, onchange: (e) => { ui.method = e.target.value; } }, NOTICE_METHODS.map((m) => h('option', { value: m, selected: m === ui.method }, m)))),
+    h('div', { class: 'row' }, h('button', { class: 'btn small primary', onclick: () => save('sent') }, 'Record as sent'),
+      opts && opts.none ? h('button', { class: 'btn small quiet', onclick: () => save('none') }, 'No such body for this child') : null),
+    msg);
+}
+const draftToggle = (r, kind, opts) => {
+  const k = r.id + '/' + (opts && opts.n ? 'c' + opts.n + '/' : '') + kind, open = S.draftOpen === k;
+  return [h('button', { class: 'btn quiet small', 'aria-expanded': String(open), onclick: () => { S.draftOpen = open ? null : k; if (!open) Timing.start('notices', r.id); refresh(); } }, open ? 'Hide the draft' : 'Draft the notice'),
+    open ? h('div', null, h('pre', { class: 'addon-pre' }, noticeDraft(r, kind, opts)), h('button', { class: 'btn small', disabled: !S.caps.downloads, onclick: () => saveDraftFile(r, kind, opts) }, 'Save the draft as a file')) : null];
+};
+function noticesDone(r) {
+  const a = s208State(r), b = childState(r);
+  const aOk = !a.applies || !!a.sent_on;
+  const bOk = !b.applies || b.step === 'done';
+  return aOk && bOk;
+}
+function noticesPanel(r) {
+  if (!clocksReady()) return h('div', { class: 'card', id: 'notices-panel' }, h('p', { class: 'note' }, 'The clocks’ rules did not load, so the notices cannot be shown in this view.'));
+  const R = CLK(), can = canWrite(), card = h('div', { class: 'card', id: 'notices-panel' });
+  const cite = (rule) => h('p', { class: 'small muted' }, h('a', { href: rule.url, target: '_blank', rel: 'noopener noreferrer' }, rule.citation), rule.words_ref ? ` (${rule.words_ref})` : '', `: “${rule.words}”.`);
+  // s.208
+  const a = s208State(r);
+  if (a.applies) {
+    resolvePeople([a.recorded && a.recorded.recorded_by].filter(Boolean));
+    add(card, h('section', { class: 'clock', id: 'clock-s208' },
+      h('h3', { class: 'ctx-title', id: 'clock-s208-h', tabindex: '-1' }, R.s208.title),
+      h('div', { class: 'row' }, clockChip(a.state, a.state.startsWith('sent') ? a.sent_on : a.due), a.state.startsWith('sent') ? h('span', { class: 'muted small' }, `last day ${dayLabel(a.due)}`) : null),
+      a.history ? h('p', { class: 'small' }, `Sent ${dayLabel(a.sent_on)}, recorded before the planner (synthetic history, made up for the demo).`)
+        : a.recorded ? h('p', { class: 'small' }, `Sent ${dayLabel(a.recorded.sent_on)} by ${String(a.recorded.method || '').toLowerCase()}; recorded by ${person(a.recorded.recorded_by).name}, ${stamp(a.recorded.recorded_at)}.`)
+        : h('p', { class: 'small' }, 'No notice on record: the placement date and the history before the planner are synthetic, made up for the demo.'),
+      !a.sent_on ? [draftToggle(r, 's208'), can ? sentForm(r, 's208', 's.208 notice') : null] : null,
+      cite(R.s208)));
+  }
+  // s.213AA: an agreement for each child, asked of the parent (or of a 16 or 17 year old applicant),
+  // recorded body by body; then, for each body agreed to, the day its information arrived and the notice.
+  const b = childState(r);
+  if (b.applies) {
+    const kidSection = (k) => {
+      const C = k.consent, who = childName(k, b.children), uk = `${r.id}/c${k.n}/consent`;
+      const ui = S.noticeUi[uk] || (S.noticeUi[uk] = { date: todayIso(), msg: '', bodies: {} });
+      const msg = msgBox('consent:' + uk, ui), hid = `clock-child-h${k.n}`;
+      // Dates before the placement are allowed: the 14 days run from the latest of the three (s.213AA(4)).
+      const rec = async (data, detail, kids) => {
+        for (const d of [data.asked_on, data.agreed_on, data.refused_on].filter((x) => x !== undefined)) { const pr = dateProblem(d, r, null); if (pr) { msg.say(pr); return; } }
+        Timing.start('notices', r.id);
+        let ok = true;
+        for (const kk of kids || [k]) ok = ok && await saveNotice(r, 'child', Object.assign({ agreed_bodies: [], declined_bodies: [] }, kk.consent || {}, data), 'consent_recorded', `${cap(childName(kk, b.children))}: ${detail}`, kk.n);
+        if (ok) { delete S.noticeUi[uk]; S.focusNext = hid; refresh(); }
+      };
+      const answer = () => {
+        if (C && C.asked_on && ui.date < C.asked_on) { msg.say(`The answer cannot be dated before the asking (${dayLabel(C.asked_on)}).`); return; }
+        const pick = BODY_KINDS.map((x) => [x, ui.bodies[x] || '']);
+        if (pick.some(([, v]) => !v)) { msg.say('Give the answer for each body.'); return; }
+        const yes = pick.filter(([, v]) => v === 'yes').map(([x]) => x), no = pick.filter(([, v]) => v === 'no').map(([x]) => x);
+        if (!yes.length) return rec({ status: 'refused', refused_on: ui.date, agreed_bodies: [], declined_bodies: no }, `s.213AA: did not agree ${dayLabel(ui.date)}`);
+        return rec({ status: 'agreed', agreed_on: ui.date, agreed_bodies: yes, declined_bodies: no },
+          `s.213AA: agreed ${dayLabel(ui.date)} to ${yes.map((x) => bodyText(x)).join(', ')}${no.length ? '; not to ' + no.map((x) => bodyText(x)).join(', ') : ''}`);
+      };
+      const dateIn = (lab) => h('label', { class: 'field' }, lab, h('input', { type: 'date', value: ui.date, max: todayIso(), 'aria-label': `${lab} (${who})`, oninput: (e) => { ui.date = e.target.value; }, onchange: (e) => { ui.date = e.target.value; } }));
+      if (C) resolvePeople([C.recorded_by].filter(Boolean));
+      const notAsked = b.kids.filter((x) => !x.consent);
+      const steps = h('ol', { class: 'steps' },
+        h('li', { class: C ? 'done' : '' }, `Ask ${k.asks} to agree to the council telling each body, and for information about the bodies${k.applicant ? ' (a 16 or 17 year old applicant living independently is asked instead of a parent: s.213AA(3))' : ''}.`, C && C.asked_on ? h('span', { class: 'muted small' }, ` Asked ${dayLabel(C.asked_on)}.`) : null),
+        h('li', { class: C && ['agreed', 'refused'].includes(C.status) ? 'done' : '' }, 'Record the answer for each body.', C && C.status === 'agreed' ? h('span', { class: 'muted small' }, ` Agreed ${dayLabel(C.agreed_on)} to ${k.bodies.filter((x) => x.agreed).map((x) => bodyText(x.kind)).join(', ')}${k.bodies.some((x) => !x.agreed) ? '; not to ' + k.bodies.filter((x) => !x.agreed).map((x) => bodyText(x.kind)).join(', ') : ''}.`)
+          : C && C.status === 'refused' ? h('span', { class: 'muted small' }, ` Did not agree (${dayLabel(C.refused_on)}): no notice is sent.`) : null),
+        h('li', { class: k.step === 'done' ? 'done' : '' }, 'For each body agreed to, record when the information about it arrived, then take reasonable steps to notify it within 14 days beginning with the latest of the agreement, that information and the placement.'));
+      const forms = !canWrite() ? null : k.step === 'ask' ? h('div', { class: 'notice-form' }, dateIn('Asked on'),
+          h('div', { class: 'row' }, h('button', { class: 'btn small primary', onclick: () => rec({ status: 'asked', asked_on: ui.date }, `s.213AA: asked ${dayLabel(ui.date)}`) }, `Record that ${k.asks} was asked`),
+            notAsked.length > 1 ? h('button', { class: 'btn small', onclick: () => rec({ status: 'asked', asked_on: ui.date }, `s.213AA: asked ${dayLabel(ui.date)}`, notAsked) }, `Record it for all ${notAsked.length} children not yet asked`) : null), msg)
+        : k.step === 'answer' ? h('div', { class: 'notice-form' }, dateIn('Answer on'),
+          h('fieldset', { class: 'bodies-answer' }, h('legend', { class: 'small' }, `Does ${k.asks} agree to the council telling each body about ${who === 'the applicant' ? 'them' : who}?`),
+            BODY_KINDS.map((x) => h('label', { class: 'field' }, bodyLabel(x), h('select', { 'aria-label': `Answer for the ${bodyText(x)} (${who})`, onchange: (e) => { ui.bodies[x] = e.target.value; } },
+              [['', 'Choose'], ['yes', 'Agrees'], ['no', 'Does not agree']].map(([v, l]) => h('option', { value: v, selected: (ui.bodies[x] || '') === v }, l)))))),
+          h('div', { class: 'row' }, h('button', { class: 'btn small primary', onclick: answer }, 'Record the answer'),
+            h('button', { class: 'btn small quiet', onclick: () => { if (C && C.asked_on && ui.date < C.asked_on) { msg.say(`The answer cannot be dated before the asking (${dayLabel(C.asked_on)}).`); return; } rec({ status: 'refused', refused_on: ui.date, agreed_bodies: [], declined_bodies: BODY_KINDS.slice() }, `s.213AA: did not agree ${dayLabel(ui.date)}`); } }, 'Did not agree to any body')), msg)
+        : null;
+      const bodyRow = (x) => {
+        const lab = `${bodyLabel(x.kind)} (${who})`, base = { info_on: x.info };
+        const iu = `${r.id}/c${k.n}/info-${x.kind}`, iui = S.noticeUi[iu] || (S.noticeUi[iu] = { date: todayIso(), msg: '' }), imsg = msgBox('info:' + iu, iui);
+        const saveInfo = async () => {
+          const pr = dateProblem(iui.date, r, null);
+          if (pr) { imsg.say(pr); return; }
+          Timing.start('notices', r.id);
+          if (await saveNotice(r, 'child-' + x.kind, { status: 'info', info_on: iui.date, sent_on: null, method: null }, 'notice_info_recorded', `${lab}: information received ${dayLabel(iui.date)}`, k.n)) { delete S.noticeUi[iu]; S.focusNext = hid; refresh(); }
+        };
+        const opts = { n: k.n, total: b.children, applicant: k.applicant };
+        return h('li', { class: 'body-row' },
+          h('div', { class: 'row' }, h('b', null, bodyLabel(x.kind)), clockChip(x.state, x.state === 'declined' || x.state === 'no_info' ? null : x.N && x.N.sent_on ? x.N.sent_on : x.due)),
+          x.info ? h('span', { class: 'muted small' }, `Information received ${dayLabel(x.info)}; last day ${dayLabel(x.due)}.`) : null,
+          x.N && x.N.status === 'none' ? h('span', { class: 'muted small' }, 'Recorded: the child has no such body.')
+            : x.N && x.N.status === 'sent' ? h('span', { class: 'muted small' }, `Sent ${dayLabel(x.N.sent_on)} by ${String(x.N.method || '').toLowerCase()}.`)
+            : x.state === 'declined' ? h('span', { class: 'muted small' }, 'Not agreed to, so no notice goes to this body.')
+            : x.state === 'no_info' ? (canWrite() ? h('div', { class: 'notice-form' },
+                h('label', { class: 'field' }, 'Information about this body received on', h('input', { type: 'date', value: iui.date, max: todayIso(), 'aria-label': `Information received on: ${lab}`, oninput: (e) => { iui.date = e.target.value; }, onchange: (e) => { iui.date = e.target.value; } })),
+                h('div', { class: 'row' }, h('button', { class: 'btn small primary', onclick: saveInfo }, 'Record the information'),
+                  h('button', { class: 'btn small quiet', onclick: () => saveNotice(r, 'child-' + x.kind, { status: 'none', sent_on: null, method: null, info_on: null }, 'notice_recorded', `${lab}: no such body`, k.n).then((ok) => { if (ok) { S.focusNext = hid; refresh(); } }) }, 'No such body for this child')),
+                x.kind === 'gp' ? h('p', { class: 'small muted gp-none' }, 'No GP practice? The guidance says the council will give the family information on how to register with one: give it, then record “No such body”.') : null, imsg) : null)
+            : [draftToggle(r, 'child-' + x.kind, opts), canWrite() ? sentForm(r, 'child-' + x.kind, lab, Object.assign({ none: true, from: x.sendFrom, keep: base }, opts)) : null]);
+      };
+      return h('section', { class: 'child-notices', id: `clock-child-${k.n}` },
+        h('h4', { class: 'ctx-title', id: hid, tabindex: '-1' }, k.applicant ? 'The applicant (16 or 17)' : b.children > 1 ? `Child ${k.n} of ${b.children}` : 'The child'),
+        steps, forms,
+        k.step === 'notify' || k.step === 'done' ? h('ul', { class: 'plain bodies' }, k.bodies.map(bodyRow)) : null);
+    };
+    const R2 = R.child;
+    add(card, h('section', { class: 'clock', id: 'clock-child' },
+      h('h3', { class: 'ctx-title', id: 'clock-child-h', tabindex: '-1' }, R2.title),
+      h('p', { class: 'small' }, 'Placed on or after 1 September 2026. Check the application date: the duty does not apply where the application was made before then, nor where securing the accommodation ends the duty under section 193 (s.213AA(1)).'),
+      h('p', { class: 'small' }, `${R2.per_child} ${b.children > 1 ? `This household has ${b.children} children on the record.` : ''}`),
+      h('p', { class: 'small muted' }, `${R2.agreement_default} ${R2.info_per_body}`),
+      h('p', { class: 'small muted' }, R2.young_applicant),
+      b.onRecord > b.children ? h('p', { class: 'note' }, `The record has ${b.onRecord} children; the planner tracks the first ${b.children}. Record the notices for the others outside the planner.`) : null,
+      b.kids.map(kidSection),
+      h('p', { class: 'small muted' }, `${R2.once} ${R2.initial_placement} `, h('a', { href: R2.url, target: '_blank', rel: 'noopener noreferrer' }, R2.citation), '; what each notice contains: ',
+        h('a', { href: R2.contents_source.url, target: '_blank', rel: 'noopener noreferrer' }, 'the DHSC guidance to GP practices and health visiting services'), '.')));
+  } else if (b.reason === 'before_commencement' && b.children) {
+    add(card, h('section', { class: 'clock' }, h('h3', { class: 'ctx-title' }, R.child.title), h('p', { class: 'small muted' }, `Placed ${dayLabel(r.placed_on)}, before the section came into force on 1 September 2026, so the application was before it too: the duty does not apply.`)));
+  }
+  // B&B
+  const c = bnbState(r);
+  if (c.applies) add(card, h('section', { class: 'clock', id: 'clock-bnb' },
+    h('h3', { class: 'ctx-title', id: 'clock-bnb-h', tabindex: '-1' }, R.bnb_family.title),
+    h('div', { class: 'row' }, c.moved ? h('span', { class: 'due' }, 'Moved on') : clockChip(c.state, c.limit, R.bnb_family.limit_label), h('span', { class: 'muted small' }, `placed ${dayLabel(r.placed_on)}; ${R.bnb_family.limit_label} ${dayLabel(c.limit)} (${R.bnb_family.limit_note})`)),
+    h('p', { class: 'small' }, R.bnb_family.note),
+    h('p', { class: 'small' }, R.bnb_family.leaves_out, ' ', h('a', { href: R.bnb_family.code.url, target: '_blank', rel: 'noopener noreferrer' }, R.bnb_family.code.title), '.'),
+    cite(R.bnb_family)));
+  if (!a.applies && !b.applies && !c.applies && !(b.reason === 'before_commencement' && b.children)) add(card, h('p', { class: 'note' }, 'No notice is due for this placement, and it is not a family placement in B&B.'));
+  return card;
+}
+function reviewsPanel(r) {
+  if (!clocksReady()) return h('div', { class: 'card', id: 'reviews-panel' });
+  const R = CLK(), list = reviewsFor(r), can = canWrite();
+  const ui = S.reviewUi[r.id] || (S.reviewUi[r.id] = { open: false, date: todayIso(), owner: myId(), msg: '' });
+  resolvePeople(list.flatMap((v) => [v.assignee, v.created_by, v.decided_by]).filter(Boolean));
+  const msg = msgBox('review:' + r.id, ui);
+  const statutory = (v) => TaClocks.lastDay(v.requested_on, R.review.days);
+  // A review can concern a decision made before the current placement, so its request can predate it.
+  const addReview = async () => {
+    const p = dateProblem(ui.date, r, null);
+    if (p) { msg.say(p); return; }
+    try {
+      const doc = { household_id: r.id, requested_on: ui.date, assignee: ui.owner || null, agreed_to: null, decided_on: null, created_by: myId(), created_at: nowIso() };
+      await S.store.set('reviews', newId('review'), doc);
+      await audit('review_requested', r.id, `requested ${dayLabel(ui.date)}`);
+      delete S.reviewUi[r.id]; say('Review recorded. The decision is due in eight weeks.'); refresh();
+    } catch (e) { writeFailed(e, 'the review'); }
+  };
+  const setReview = async (v, patch, action, detail) => {
+    if ('decided_on' in patch) { const p = dateProblem(patch.decided_on, r, v.requested_on); if (p) { say(p); return; } }
+    if (patch.agreed_to && patch.agreed_to < statutory(v)) { say(`A longer period agreed in writing ends on or after the statutory date, ${dayLabel(statutory(v))}.`); refresh(); return; }
+    try {
+      await S.store.update('reviews', v.id, Object.assign({}, patch, 'decided_on' in patch ? { decided_by: myId() } : {}));
+      await audit(action, r.id, detail);
+      // The change came from a field in this panel, which the redraw would otherwise leave alone.
+      if (document.activeElement && $('#slot-reviews').contains(document.activeElement)) document.activeElement.blur();
+      if ('decided_on' in patch) S.reviewEdit = null;
+      refresh();
+    } catch (e) { writeFailed(e, 'the review'); }
+  };
+  const row = (v) => {
+    const k = reviewClock(v), edit = S.reviewEdit === v.id;
+    return h('li', { class: 'body-row' },
+      h('div', { class: 'row' }, h('b', null, `Requested ${dayLabel(v.requested_on)}`), clockChip(k.state, v.decided_on || k.due)),
+      h('span', { class: 'muted small' }, `${v.decided_on ? `Decided ${dayLabel(v.decided_on)}` : `Decision due by ${dayLabel(k.due)}${v.agreed_to ? ' (a longer period agreed in writing)' : ''}`}; owner ${v.assignee ? person(v.assignee).name : 'nobody'}.`),
+      can && !v.decided_on ? h('button', { class: 'linkish small', 'aria-expanded': String(edit), onclick: () => { S.reviewEdit = edit ? null : v.id; refresh(); } }, edit ? 'Close' : 'Record the decision or a longer period') : null,
+      edit ? h('div', { class: 'notice-form' },
+        h('label', { class: 'field' }, 'Decision notified on', h('input', { type: 'date', max: todayIso(), min: v.requested_on, 'aria-label': 'Decision notified on', onchange: (e) => setReview(v, { decided_on: e.target.value }, 'review_decided', `review of ${dayLabel(v.requested_on)}: decided ${dayLabel(e.target.value)}`) })),
+        h('label', { class: 'field' }, 'Longer period agreed in writing, to', h('input', { type: 'date', min: statutory(v), value: v.agreed_to || '', 'aria-label': 'Longer period agreed in writing, to', onchange: (e) => setReview(v, { agreed_to: e.target.value || null }, 'review_extended', `review of ${dayLabel(v.requested_on)}: to ${dayLabel(e.target.value)}`) })),
+        h('label', { class: 'field' }, 'Owner', h('select', { 'aria-label': 'Review owner', onchange: (e) => setReview(v, { assignee: e.target.value || null }, 'review_changed', 'owner') }, peopleOptions(v.assignee)))) : null);
+  };
+  return h('div', { class: 'card', id: 'reviews-panel' },
+    list.length ? h('ul', { class: 'plain bodies' }, list.map(row)) : h('p', { class: 'note' }, 'No review has been asked for.'),
+    !can ? null : ui.open ? h('div', { class: 'notice-form' },
+      h('label', { class: 'field' }, 'Requested on', h('input', { type: 'date', value: ui.date, max: todayIso(), 'aria-label': 'Review requested on', oninput: (e) => { ui.date = e.target.value; }, onchange: (e) => { ui.date = e.target.value; } })),
+      h('label', { class: 'field' }, 'Owner', h('select', { 'aria-label': 'Owner of the review', onchange: (e) => { ui.owner = e.target.value; } }, peopleOptions(ui.owner))),
+      h('div', { class: 'row' }, h('button', { class: 'btn small primary', onclick: addReview }, 'Record the request'), h('button', { class: 'btn small quiet', onclick: () => { delete S.reviewUi[r.id]; refresh(); } }, 'Cancel')), msg)
+      : h('button', { class: 'btn small', onclick: () => { ui.open = true; refresh(); } }, '+ Record a review request'),
+    h('p', { class: 'small' }, R.review.covers),
+    h('p', { class: 'small' }, R.review.interim, ' ', h('a', { href: R.review.interim_source.url, target: '_blank', rel: 'noopener noreferrer' }, R.review.interim_source.title), '.'),
+    h('p', { class: 'small muted' }, h('a', { href: R.review.url, target: '_blank', rel: 'noopener noreferrer' }, R.review.citation), R.review.words_ref ? ` (${R.review.words_ref})` : '', `: “${R.review.words}”. Recording a request needs no second officer; the review itself is decided outside the planner.`));
+}
+function clocksMeta(r) {
+  const a = s208State(r), b = childState(r), c = bnbState(r);
+  const late = [a.applies && a.state === 'overdue', ...(b.bodies || []).map((x) => x.state === 'overdue'), c.applies && !c.moved && c.state === 'past', ...reviewsFor(r).map((v) => !v.decided_on && reviewClock(v).state === 'overdue')].filter(Boolean).length;
+  const todo = [a.applies && a.state === 'due', ...(b.kids || []).map((k) => k.step === 'ask'), ...(b.bodies || []).map((x) => x.state === 'due'), c.applies && !c.moved && c.state === 'soon', ...reviewsFor(r).map((v) => !v.decided_on && reviewClock(v).state === 'due')].filter(Boolean).length;
+  return late ? `${late} overdue` : todo ? `${todo} to do` : 'nothing due';
+}
+
+/* ---------- Compliance at risk */
+function drawCompliance() {
+  const v = $('#view-compliance');
+  const items = complianceItems();
+  resolvePeople(items.map((x) => x.owner).filter(Boolean));
+  const groups = [['Overdue', items.filter((x) => x.state === 'overdue')], ['Due in the next 14 days', items.filter((x) => x.state === 'due')], ['To start', items.filter((x) => x.state === 'start')],
+    ['Waiting on the household', items.filter((x) => x.state === 'wait')]];
+  const block = (title, xs) => h('section', { class: 'card' }, h('div', { class: 'card-head' }, h('h2', { class: 'h2' }, title), h('span', { class: 'note' }, String(xs.length))),
+    h('ul', { class: 'tasks wide' }, xs.sort((a, b) => String(a.due || '9').localeCompare(String(b.due || '9'))).map((x) => h('li', { class: 'task nocheck', 'data-key': x.key },
+      h('div', { class: 'task-main' }, h('span', { class: 'task-t' }, x.what),
+        h('span', { class: 'task-meta' }, h('button', { class: 'linkish small', onclick: () => { go('file', x.r.id); openSection('sec-clocks'); } }, `${x.r.id} · ${cap(x.r.household_type)}`),
+          x.due ? clockChip(x.chip || x.state, x.due, x.pre) : x.state === 'wait' ? clockChip(x.chip, null) : h('span', { class: 'due' }, 'No time limit in the section'), h('span', { class: 'muted small' }, x.owner ? person(x.owner).name : 'No officer')))))));
+  swap(v,
+    h('div', { class: 'head' }, h('h1', { class: 'h1' }, 'Compliance at risk'), h('p', { class: 'lede' }, 'Every statutory clock that needs an officer now: notices due or overdue, families near or past 6 weeks in B&B, and review decisions near or past eight weeks. Open the household to act. Below them, what waits on the household (an answer, or the information about a body), which no clock times yet; a household leaves this page only when every child’s notices are done.')),
+    !clocksReady() ? h('div', { class: 'card' }, h('p', { class: 'note' }, 'The clocks’ rules did not load, so this page cannot be worked out in this view.'))
+      : items.length ? groups.filter(([, xs]) => xs.length).map(([t, xs]) => block(t, xs)) : h('div', { class: 'card' }, h('p', { class: 'note' }, 'No clock needs an officer now.')),
+    h('p', { class: 'house' }, 'Synthetic records only. Dates are worked out from the record and the rules in spec/clocks.json; the officer checks each one. The s.208 history before the planner is made up for the demo. The planner sends nothing.'));
+}
+
+/* ---------- handover summary */
+function handoverPanel(r) {
+  const since = S.handoverSince[r.id] || plusDays(-14);
+  const w = workflowOf(r.id), M = S.moves.get(r.id), F = S.files.get(r.id);
+  const open = tasksFor(r).filter((t) => !t.done);
+  const changes = S.audit.filter((e) => e.household_id === r.id && String(e.at).slice(0, 10) >= since);
+  resolvePeople([F && F.assignee, ...changes.map((e) => e.author)].filter(Boolean));
+  const lines = handoverLines(r, since);
+  return h('div', { class: 'card', id: 'handover-panel' },
+    h('div', { class: 'row' }, h('label', { class: 'field' }, 'What changed since', h('input', { type: 'date', value: since, max: todayIso(), 'aria-label': 'What changed since', onchange: (e) => { S.handoverSince[r.id] = e.target.value || plusDays(-14); Timing.start('handover', r.id); refresh(); } }))),
+    h('dl', { class: 'props' },
+      [['Duty and need', `${cap(r.priority_need)}; ${r.local_connection ? 'has' : 'no'} local connection`],
+        ['Placement', `${TYPE_LABEL[r.accommodation_type] || r.accommodation}, since ${dayLabel(r.placed_on)} (${r.weeks_in_ta} weeks)${r.placed_in_another_district ? ', in another council’s district' : ''}`],
+        ['Plan', `${STATE_LABEL[w.state] || w.state}${M && M.stage ? '; ' + (STAGE_LABEL[M.stage] || M.stage) : ''}`],
+        ['Officer', F && F.assignee ? person(F.assignee).name : 'Nobody yet'],
+        ['Open follow-ups', open.length ? open.map((t) => `${t.text} (${t.due ? dayLabel(t.due) : 'no date'})`).join('; ') : 'None'],
+        ['Clocks', clocksReady() ? clocksMeta(r) : 'Not available in this view']].map(([k, val]) => [h('dt', null, k), h('dd', null, val)])),
+    h('h3', { class: 'ctx-title' }, `Changes since ${dayLabel(since)} (${changes.length})`),
+    changes.length ? h('ul', { class: 'plain small' }, changes.slice(0, 30).map((e) => h('li', null, `${stamp(e.at)}: ${nameFor(e.author)} ${ACTION_LABEL[e.action] || e.action}${e.detail ? ' (' + e.detail + ')' : ''}`))) : h('p', { class: 'note' }, 'Nothing recorded on this household since then.'),
+    h('div', { class: 'row' },
+      h('button', { class: 'btn small', onclick: () => Timing.start('handover', r.id) }, 'Prepare a handover'),
+      h('button', { class: 'btn small primary', disabled: !S.caps.downloads, onclick: async () => {
+        Timing.start('handover', r.id);
+        try { await S.caps.downloads.save({ filename: `${r.id}-handover.md`, data: lines.join('\n') + '\n' }); await audit('handover_exported', r.id, `since ${since}`); Timing.end('handover', r.id); say('Handover saved.'); }
+        catch (e) { if (e && e.code !== 'declined') banner('dl', 'warn', 'The file could not be saved from this view.'); }
+      } }, 'Save the handover (.md)')));
+}
+function handoverLines(r, since) {
+  const w = workflowOf(r.id), M = S.moves.get(r.id), F = S.files.get(r.id);
+  const open = tasksFor(r).filter((t) => !t.done);
+  const changes = S.audit.filter((e) => e.household_id === r.id && String(e.at).slice(0, 10) >= since);
+  const L = [`# Handover: ${r.id} (synthetic record)`, '', `Prepared ${stamp(nowIso())}. Synthetic records only; a summary for the officer taking the household over, not a decision.`, '',
+    `- Duty and need: ${cap(r.priority_need)}; ${r.local_connection ? 'has' : 'no'} local connection`,
+    `- Household: ${cap(r.household_type)}, ${r.household_size} ${plural(r.household_size, 'person', 'people')}`,
+    `- Placement: ${TYPE_LABEL[r.accommodation_type] || r.accommodation}, since ${dayLabel(r.placed_on)} (${r.weeks_in_ta} weeks)${r.placed_in_another_district ? ', in another council’s district' : ''}`,
+    `- Plan: ${STATE_LABEL[w.state] || w.state}${M && M.stage ? '; ' + (STAGE_LABEL[M.stage] || M.stage) : ''}`,
+    `- Officer: ${F && F.assignee ? nameFor(F.assignee) : 'nobody yet'}`,
+    `- Clocks: ${clocksReady() ? clocksMeta(r) : 'not available'}`, '', '## Open follow-ups', '',
+    ...(open.length ? open.map((t) => `- ${t.text} (due ${t.due ? dayLabel(t.due) : 'no date'}; ${t.assignee ? nameFor(t.assignee) : 'no owner'})`) : ['- None']), '',
+    `## Changes since ${dayLabel(since)}`, '',
+    ...(changes.length ? changes.map((e) => `- ${stamp(e.at)}: ${nameFor(e.author)} ${ACTION_LABEL[e.action] || e.action}${e.detail ? ' (' + e.detail + ')' : ''}`) : ['- Nothing recorded']), '',
+    STATUS_LINE];
+  return L;
+}
+
+/* ---------- task timings for a pilot
+   Three tasks are timed in this browser only: starting a plan, sending the notices for a
+   placement, and preparing a handover. Each entry holds the task, when it started and ended, and
+   how many buttons and fields were used on the household's page meanwhile. No household, person
+   or free text is kept, and nothing leaves this browser unless the log is exported. */
+const TIMED = { plan: 'Start a plan (first click to submission)', notices: 'Send the notices for a placement', handover: 'Prepare a handover' };
+const Timing = (() => {
+  const running = new Map();
+  const log = () => local.get('pilot_steps', []);
+  function start(task, hid) { const k = task + '/' + hid; if (!running.has(k)) running.set(k, { task, hid, started_at: nowIso(), steps: 0 }); }
+  function end(task, hid) {
+    const k = task + '/' + hid, x = running.get(k); if (!x) return;
+    running.delete(k);
+    const ended = nowIso(), minutes = Math.round(((Date.parse(ended) - Date.parse(x.started_at)) / 60000) * 10) / 10;
+    local.set('pilot_steps', [...log(), { task, started_at: x.started_at, ended_at: ended, minutes, steps: x.steps }].slice(-500));
+  }
+  function step(hid) { for (const x of running.values()) if (x.hid === hid) x.steps++; }
+  const runningFor = (task) => [...running.values()].filter((x) => x.task === task).map((x) => x.hid);
+  return { start, end, step, log, runningFor, clear: () => local.set('pilot_steps', []), running: () => running.size };
+})();
+document.addEventListener('click', (e) => { if (S.view === 'file' && S.fileId && e.target.closest && e.target.closest('#view-file button, #view-file input, #view-file select')) Timing.step(S.fileId); }, true);
+const median = (xs) => { const s = [...xs].sort((a, b) => a - b); return s.length ? (s.length % 2 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2) : null; };
+function drawTimings() {
+  const v = $('#view-timings'), log = Timing.log();
+  const csv = () => ['task,started_at,ended_at,minutes,steps', ...log.map((x) => [x.task, x.started_at, x.ended_at, x.minutes, x.steps].map(csvCell).join(','))].join('\n') + '\n';
+  swap(v,
+    h('div', { class: 'head' }, h('h1', { class: 'h1' }, 'Pilot timings'), h('p', { class: 'lede' }, 'How long three tasks take in the planner, and how many steps, from this browser’s own log. For a pilot: time the same tasks without the planner and compare.')),
+    h('div', { class: 'card' }, h('div', { class: 'scroll' }, h('table', null,
+      h('thead', null, h('tr', null, h('th', null, 'Task'), h('th', { class: 'num' }, 'Times done'), h('th', { class: 'num' }, 'Median minutes'), h('th', { class: 'num' }, 'Median steps'))),
+      h('tbody', null, Object.entries(TIMED).map(([k, label]) => { const xs = log.filter((x) => x.task === k); const m = median(xs.map((x) => x.minutes)), s = median(xs.map((x) => x.steps));
+        return h('tr', { 'data-task': k }, h('td', null, label), h('td', { class: 'num' }, String(xs.length)), h('td', { class: 'num' }, m === null ? '' : String(m)), h('td', { class: 'num' }, s === null ? '' : String(s))); })))),
+      h('div', { class: 'row' },
+        h('button', { class: 'btn small', disabled: !S.caps.downloads || !log.length, onclick: async () => { try { await S.caps.downloads.save({ filename: 'move-forward-pilot-timings.csv', data: csv() }); } catch (e) { if (e && e.code !== 'declined') banner('dl', 'warn', 'The file could not be saved from this view.'); } } }, 'Export .csv'),
+        S.clearTimings ? [h('span', { class: 'small' }, 'Clear this browser’s log?'), h('button', { class: 'btn small danger', onclick: () => { Timing.clear(); S.clearTimings = false; drawTimings(); } }, 'Clear'), h('button', { class: 'btn small quiet', onclick: () => { S.clearTimings = false; drawTimings(); } }, 'Keep')]
+          : h('button', { class: 'btn small quiet', disabled: !log.length, onclick: () => { S.clearTimings = true; drawTimings(); } }, 'Clear the log'))),
+    h('p', { class: 'note' }, 'This browser’s log only: no household, person or free text is kept. A task starts with its first action (a plan started, a notice drafted or a date entered, a handover opened) and ends when the plan is submitted, the last notice is recorded, or the handover is saved. A step is a button or field used on the household’s page meanwhile. Leaving the page mid-task drops it.'));
+}
+
+/* ============================================================== sign-in (demo) */
+const session = {
+  get(k) { try { return sessionStorage.getItem('ta.' + k); } catch { return (S.sess || {})[k] || null; } },
+  set(k, v) { S.sess = Object.assign(S.sess || {}, { [k]: v }); try { if (v) sessionStorage.setItem('ta.' + k, v); else sessionStorage.removeItem('ta.' + k); } catch { /* storage unavailable */ } },
+};
+function landingFor(id) {
+  const p = DEMO_PEOPLE[id];
+  if (p.edit && S.records.some((r) => inPreset(r, 'review'))) return () => goList('review');
+  if (!p.view && myOpenTasks().length) return () => go('tasks');
+  return () => go('overview');
+}
+function portalInert(on) {
+  for (const n of document.body.children) { if (n.id === 'portal' || n.tagName === 'SCRIPT' || n.tagName === 'STYLE') continue; if (on) n.setAttribute('inert', ''); else n.removeAttribute('inert'); }
+}
+function signIn(id, land) {
+  S.demoAs = id; local.set('demo_as', id); session.set('signed_in', id);
+  $('#portal').hidden = true; document.body.classList.remove('portal-on'); portalInert(false);
+  refresh();
+  if (land) landingFor(id)();
+  say(`Signed in as ${DEMO_PEOPLE[id].name}, ${DEMO_PEOPLE[id].role}.`);
+  requestAnimationFrame(() => { const t = document.querySelector('.view:not([hidden]) h1'); if (t) { if (!t.hasAttribute('tabindex')) t.setAttribute('tabindex', '-1'); t.focus({ preventScroll: true }); } });
+}
+function showPortal(land) {
+  const el = $('#portal'), cur = session.get('signed_in');
+  const waiting = S.records.filter((r) => workflowOf(r.id).state === 'submitted').length;
+  swap(el, h('div', { class: 'portal-in' },
+    h('section', { class: 'portal-brand' },
+      h('div', { class: 'portal-mark' }, h('span', { class: 'fs-mark', 'aria-hidden': 'true' }), h('span', null, h('b', null, 'Move forward'), h('span', null, 'Planner'))),
+      h('h1', { class: 'portal-h' }, 'Plans out of temporary accommodation, for an officer to approve.'),
+      h('p', null, 'Move-forward plans drafted for each household from its record, approved by an officer (with four-eyes on, a second one), and followed through to the move.'),
+      h('ul', { class: 'portal-facts' }, h('li', null, h('b', null, String(S.records.length)), ' synthetic households'), h('li', null, h('b', null, String(waiting)), ' plans awaiting approval')),
+      h('p', { class: 'portal-house' }, 'Synthetic records only. Plans are suggestions for an officer to approve.')),
+    h('section', { class: 'portal-card', 'aria-labelledby': 'portal-title' },
+      h('h2', { id: 'portal-title' }, 'Sign in'),
+      h('p', { class: 'muted' }, 'Demo: choose a synthetic person. There is no password, and what you do stays in this tab.'),
+      h('ul', { class: 'portal-people' }, Object.entries(DEMO_PEOPLE).map(([id, p]) => h('li', null, h('button', { class: 'portal-person' + (cur === id ? ' on' : ''), 'aria-current': cur === id ? 'true' : null, 'data-person': id, onclick: () => signIn(id, land) },
+        h('span', { class: 'who-av', 'aria-hidden': 'true' }, p.initials),
+        h('span', { class: 'pp-t' }, h('span', { class: 'pp-n' }, h('b', null, p.name), h('span', { class: 'pp-role' }, p.role)), h('span', { class: 'pp-d' }, p.does)))))),
+      h('div', { class: 'portal-or' }, h('span', null, 'In a deployment')),
+      h('label', { class: 'field' }, 'Work email', h('input', { type: 'email', disabled: true, placeholder: 'Your work email' })),
+      h('button', { class: 'btn', disabled: true }, 'Send me a sign-in code'),
+      h('p', { class: 'note' }, 'The hosted version signs people in with a one-time code sent to their work email. Only people the owner has invited can sign in, and the owner sets each role [Certain].'))));
+  el.hidden = false; document.body.classList.add('portal-on'); portalInert(true);
+  // Opened to switch person, Escape keeps the one signed in.
+  el.onkeydown = (e) => { if (e.key === 'Escape' && DEMO_PEOPLE[session.get('signed_in')]) { e.stopPropagation(); signIn(session.get('signed_in'), false); } };
+  const first = el.querySelector('.portal-person.on') || el.querySelector('.portal-person');
+  if (first) first.focus();
+}
+// From the live planner: try the roles in this tab. The page reloads on a store of its own for
+// this tab only; nothing done there reaches the shared store. A new tab goes back to it.
+function enterDemo() { session.set('demo_roles', '1'); session.set('signed_in', null); location.reload(); }
+function leaveDemo() { session.set('demo_roles', null); session.set('signed_in', null); location.reload(); }
+const sessionOk = () => { try { sessionStorage.setItem('ta.probe', '1'); sessionStorage.removeItem('ta.probe'); return true; } catch { return false; } };
+
+/* ============================================================== boot */
+async function boot() {
+  mountShell();
+  try { await loadStatic(); } catch (e) {
+    console.warn(e);
+    swap($('#view-caseload'), h('div', { class: 'banner bad' }, 'The caseload could not be loaded. Reload the page; if it still does not load, the data files are missing from this build.'));
+    return;
+  }
+  const m = S.manifest;
+  $('#provenance').textContent = `Build: commit ${m.source_commit}${m.source_dirty ? ' with uncommitted changes' : ''}, spec version ${m.spec_version}.`;
+  routeFromHash();
+  // Capabilities light up as they arrive; the page works without each of them.
+  useCap('user').then(async (user) => {
+    S.caps.user = user;
+    if (user) {
+      try {
+        const me = await user.me();
+        S.me.id = me.id; S.me.name = me.name || ''; S.me.avatar = me.avatarUrl || ''; S.me.isOwner = !!me.isOwner; S.me.canEdit = !!me.canEdit;
+        S.me.canData = await user.can('data.write');
+      } catch { /* reads never reject; keep defaults */ }
+      S.me.role = S.me.isOwner ? 'Owner' : S.me.canEdit ? 'Editor' : S.me.canData === true ? 'Contributor' : S.me.canData === false ? 'Viewer' : '';
+      if (S.store && S.store.kind === 'db' && S.me.id) addMember(S.me.id);
+    }
+    refresh();
+  });
+  useCap('sample').then((sample) => { S.caps.sample = sample; refresh(); });
+  useCap('downloads').then((dl) => { S.caps.downloads = dl; refresh(); });
+  const forced = !HOSTED && session.get('demo_roles') === '1';
+  const db = forced ? null : await useCap('db');
+  S.caps.db = db;
+  if (db) { S.store = dbStore(db); S.storeState = 'live'; }
+  else {
+    S.store = memoryStore(); S.storeState = 'demo';
+    banner('demo', 'warn', forced ? 'Demo roles: this tab works on a store of its own, so nothing done here reaches the shared planner. Open the planner in a new tab to go back to it.'
+      : `Demo mode: this view has no shared store, so changes stay in this tab and go when it closes.${demoDay() ? ` It runs on ${dayLabel(demoDay())}, the day after the synthetic caseload was drawn, so its clocks show the same on any day you open it.` : ''}`);
+  }
+  subscribeAll();
+  refresh();
+  if (isDemo() && !HOSTED && !DEMO_PEOPLE[session.get('signed_in')]) showPortal(!location.hash || location.hash === '#overview');
+}
+const AUDIT_LIMIT = 1000, MAX_MEMBERS = 18;
+let unsubs = [];
+const memberUnsubs = new Map(), seq = new Map();
+const onErr = (what) => (e) => {
+  if (e && e.code === 'revoked') banner('revoked', 'warn', 'This view no longer has access to the shared store.');
+  else if (e && e.code === 'resource_exhausted') banner('subs', 'warn', 'This view reached the store’s limit on live updates, so some records may not show. Tell the owner.');
+  else banner('sub-' + what, 'warn', `Live updates for ${what} stopped. Reload the page to reconnect.`);
+};
+async function onVersions(uid, rows) {
+  const n = (seq.get(uid) || 0) + 1;
+  seq.set(uid, n);
+  const list = rows.map((r) => Object.assign({}, r.data, { id: r.id, author: uid, key: `${uid}/${r.id}` })).filter((v) => v.plan && typeof v.household_id === 'string');
+  const ok = await Promise.all(list.map(async (v) => (await sha256(canon(v.plan))) === v.sha256));
+  if (seq.get(uid) !== n) return;   // a newer snapshot arrived meanwhile
+  list.forEach((v, i) => S.verified.set(v.key, ok[i]));
+  S.byMember.versions.set(uid, list);
+  S.versions = new Map([...S.byMember.versions.values()].flat().map((v) => [v.key, v]));
+  refresh();
+}
+function onDecisions(uid, rows) {
+  S.byMember.decisions.set(uid, rows.map((r) => Object.assign({}, r.data, { id: r.id, author: uid })));
+  const m = new Map(), lessons = new Map(), ld = new Map();
+  for (const d of [...S.byMember.decisions.values()].flat()) {
+    // A return that keeps its note as a lesson; the lesson's key is the decision's own path.
+    if (d.decision === 'returned' && d.lesson && d.lesson.scope && typeof d.note === 'string' && d.note.trim() && typeof d.household_id === 'string') {
+      const key = `${d.author}/${d.id}`;
+      lessons.set(key, { key, author: d.author, hid: d.household_id, scope: d.lesson.scope, text: d.note.trim(), sha256: d.lesson.sha256, proposed_at: d.decided_at });
+    }
+    if (['lesson_approved', 'lesson_rejected'].includes(d.decision) && typeof d.lesson_id === 'string') {
+      if (!ld.has(d.lesson_id)) ld.set(d.lesson_id, []);
+      ld.get(d.lesson_id).push(d);
+      continue;
+    }
+    if (typeof d.household_id !== 'string' || !['approved', 'returned', 'rejected', 'reopened'].includes(d.decision)) continue;
+    if (!m.has(d.household_id)) m.set(d.household_id, []);
+    m.get(d.household_id).push(d);
+  }
+  S.decisions = m; S.lessons = lessons; S.lessonDecisions = ld;
+  verifyLessons();
+  refresh();
+}
+// Each lesson's text is checked against the SHA-256 saved with it as it arrives.
+let lessonSeq = 0;
+async function verifyLessons() {
+  const n = ++lessonSeq, list = [...S.lessons.values()];
+  const ok = await Promise.all(list.map(async (L) => (await sha256(canon({ scope: L.scope, text: L.text }))) === L.sha256));
+  if (n !== lessonSeq) return;
+  S.lessonVerified = new Map(list.map((L, i) => [L.key, ok[i]]));
+  refresh();
+}
+function onAudit(uid, rows) {
+  S.byMember.audit.set(uid, rows.map((r) => Object.assign({}, r.data, { id: r.id, author: uid })));
+  if (rows.length >= AUDIT_LIMIT) S.auditCapped = true;
+  S.audit = [...S.byMember.audit.values()].flat().sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0));
+  refresh();
+}
+function addMember(uid) {
+  if (!uid || S.members.has(uid) || !S.store) return;
+  if (S.members.size >= MAX_MEMBERS) { banner('members', 'warn', `More than ${MAX_MEMBERS} people have worked in this planner, and this view reads the records of the first ${MAX_MEMBERS} only. Tell the owner.`); return; }
+  S.members.add(uid);
+  memberUnsubs.set(uid, [
+    S.store.watch(ownColl('versions', uid), null, (rows) => { onVersions(uid, rows); }, onErr('plans')),
+    S.store.watch(ownColl('decisions', uid), null, (rows) => onDecisions(uid, rows), onErr('decisions')),
+    S.store.watch(ownColl('audit', uid), { orderBy: 'at', dir: 'desc', limit: AUDIT_LIMIT }, (rows) => onAudit(uid, rows), onErr('the audit log')),
+  ]);
+}
+function subscribeAll() {
+  unsubs.forEach((u) => { try { u(); } catch { /* already closed */ } });
+  unsubs = [];
+  const asMap = (rows) => new Map(rows.map((r) => [r.id, r.data]));
+  unsubs.push(S.store.watch('files', null, (rows) => { S.files = asMap(rows); refresh(); }, onErr('plans')));
+  unsubs.push(S.store.watch('checks', null, (rows) => { S.checks = asMap(rows); refresh(); }, onErr('checks')));
+  unsubs.push(S.store.watch('moves', null, (rows) => { S.moves = asMap(rows); refresh(); }, onErr('progress')));
+  unsubs.push(S.store.watch('tasks', null, (rows) => { S.tasks = asMap(rows); refresh(); }, onErr('follow-ups')));
+  unsubs.push(S.store.watch('notices', null, (rows) => {
+    S.notices = asMap(rows);
+    // A notices task ends when the last notice for that placement is recorded.
+    for (const hid of Timing.runningFor('notices')) { const r = S.byId.get(hid); if (r && noticesDone(r)) Timing.end('notices', hid); }
+    refresh();
+  }, onErr('notices')));
+  unsubs.push(S.store.watch('reviews', null, (rows) => { S.reviews = asMap(rows); refresh(); }, onErr('reviews')));
+  unsubs.push(S.store.watch('monitor', null, (rows) => { S.monitor = asMap(rows); refresh(); }, onErr('monitoring decisions')));
+  unsubs.push(S.store.watchDoc('config', 'workflow', (doc) => { S.workflow = Object.assign({ four_eyes: true }, doc || {}); refresh(); }, onErr('settings')));
+  unsubs.push(S.store.watch('members', null, (rows) => { S.memberIds = new Set(rows.map((r) => r.id)); S.memberInfo = new Map(rows.map((r) => [r.id, r.data || {}])); rows.forEach((r) => addMember(r.id)); refresh(); }, onErr('people')));
+  if (S.store.kind === 'memory') Object.keys(DEMO_PEOPLE).forEach(addMember);
+  else if (S.me.id) addMember(S.me.id);
+}
+window.addEventListener('hashchange', () => { if (S.records.length) routeFromHash(); });
+boot();
+})();

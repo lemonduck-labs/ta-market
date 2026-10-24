@@ -1,0 +1,77 @@
+/* Move forward: white ground, one deep teal for actions, clay for what is due or needs a person's
+   eye. Poppins Bold Italic for the wordmark, page titles and key figures (the owner's choice);
+   Source Sans 3 for text, forms and
+   tables. All under the SIL Open Font License 1.1 (fonts/OFL.txt). Tokens carry the tool's names and the
+   Dashboard type's (--color-*, --cds-*, --font-anthropic-*), so the market picture and the planner
+   read as one product. Edit this file; pages get it through fdcore.brand. */
+@font-face { font-family: "Source Sans 3"; font-style: normal; font-weight: 200 900; font-display: swap; src: url("fonts/source-sans-3-latin-wght-normal.woff2") format("woff2"); }
+@font-face { font-family: "Poppins"; font-style: italic; font-weight: 700; font-display: swap; src: url("fonts/poppins-latin-700-italic.woff2") format("woff2"); }
+/* Repeated :root raises the block above a host's own dark rules, so the palette stays light. */
+html:root:root:root {
+  color-scheme: light;
+  --font-sans: "Source Sans 3", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --font-serif: "Poppins", "Source Sans 3", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  --font-brand: "Poppins", "Source Sans 3", system-ui, sans-serif;
+  --bg: #ffffff;
+  --panel: #ffffff;
+  --panel-2: #eee9df;
+  --line: #ddd5c7;
+  --line-strong: #bdb3a2;
+  --fg: #1a2522;
+  --fg-2: #364542;
+  --muted: #5a6763;
+  --accent: #1d6157;
+  --accent-hover: #164b43;
+  --accent-fg: #ffffff;
+  --accent-soft: #dcece8;
+  --clay: #a3442a;
+  --clay-soft: #f6e2d8;
+  --syn: #64458a;
+  --syn-soft: #ece5f3;
+  --ok: #2c6a3f;
+  --ok-soft: #dfeddf;
+  --warn: #7d540a;
+  --warn-soft: #f5e9d2;
+  --bad: #9a2f27;
+  --bad-soft: #f4e0dc;
+  --info: #2f548f;
+  --info-soft: #e1e8f3;
+  --ret: #a3442a;
+  --ret-soft: #f6e2d8;
+  --chart-muted: #c3b9a8;
+  --chart-axis: #8a8577;
+  --chart-grid: #e8e2d6;
+  --chart-ref: #5a6763;
+  --shadow: 0 1px 2px rgba(26, 37, 34, 0.06), 0 6px 18px rgba(26, 37, 34, 0.07);
+  --focus: #1d6157;
+  --brand-ground: #1d6157;
+  --brand-signal: #f08f66;
+  --brand-on-ground: #ffffff;
+  --brand-mark: url("mark.svg");
+  --color-bg: #ffffff;
+  --color-panel: #fffdf8;
+  --color-panel-2: #eee9df;
+  --color-fg: #1a2522;
+  --color-fg-muted: #5a6763;
+  --color-border-line: #ddd5c7;
+  --color-ok: #2c6a3f;
+  --color-warn: #7d540a;
+  --color-bad: #9a2f27;
+  --accent-ink: #ffffff;
+  --cds-chart-muted: #c3b9a8;
+  --cds-chart-axis: #8a8577;
+  --cds-chart-grid: #e8e2d6;
+  --cds-chart-reference: #5a6763;
+  --cds-surface-popover: #fffdf8;
+  --cds-border: #ddd5c7;
+  --cds-text-secondary: #5a6763;
+  --font-anthropic-sans: var(--font-sans);
+  --font-anthropic-serif: var(--font-serif);
+}
+/* One light palette in every theme, as Diversion Radar (the owner's choice, 22 Oct 2026). */
+
+/* The sidebar of fd-core's shell takes the page's own tokens, so it is white, as the sign-in screen is. */
+/* The display face is set at the one weight and style it carries. */
+html .fs-brand b, html .portal-mark b { font-weight: 700; font-style: italic; letter-spacing: -0.01em; }
+html .h1, html .portal-h { font-weight: 700; font-style: italic; letter-spacing: -0.015em; }

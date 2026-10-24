@@ -1,0 +1,74 @@
+[
+ {
+  "pattern_id": "in_tables",
+  "section": "coverage",
+  "pattern": "Councils in the tables",
+  "may_mean": "Housing authorities in both MHCLG tables for 2024-25 [Certain].",
+  "london": 33,
+  "rest_of_england": 263,
+  "england": 296
+ },
+ {
+  "pattern_id": "not_shown",
+  "section": "coverage",
+  "pattern": "Not shown as dots",
+  "may_mean": "Not compared: two or more of the five counts missing, no positive spend on lines 80 to 85, or fewer than 50 households on average [Certain]. Or left out until a person checks them: councils averaging at least 100 households whose count changes by more than 40% between quarters, or with nothing on lines 80 to 86 in 2024-25 or 2025-26 [Certain on the rules]. A change that size may be a reporting slip or a real move [Likely].",
+  "london": 9,
+  "rest_of_england": 103,
+  "england": 112
+ },
+ {
+  "pattern_id": "left_out",
+  "section": "coverage",
+  "pattern": "Of these, left out for a data check",
+  "may_mean": "Given for England only. Councils are unnamed, not anonymous: each dot matches one council in MHCLG's published tables [Certain].",
+  "london": null,
+  "rest_of_england": null,
+  "england": 8
+ },
+ {
+  "pattern_id": "shown",
+  "section": "coverage",
+  "pattern": "Shown",
+  "may_mean": "The councils on the chart: each example, and the grey dots behind its band and median [Certain].",
+  "london": 24,
+  "rest_of_england": 160,
+  "england": 184
+ },
+ {
+  "pattern_id": "far_above",
+  "section": "pattern",
+  "pattern": "More than twice the median of all the councils shown in the group, with at least 100 households",
+  "may_mean": "The spend may cover households the count does not, be classified differently, or prices may be higher [Likely].",
+  "london": 0,
+  "rest_of_england": 8,
+  "england": 8
+ },
+ {
+  "pattern_id": "far_below",
+  "section": "pattern",
+  "pattern": "Under a quarter of the median of all the councils shown in the group",
+  "may_mean": "Spend is probably recorded outside the TA lines, or placements are mostly in cheaper types [Likely].",
+  "london": 0,
+  "rest_of_england": 14,
+  "england": 14
+ },
+ {
+  "pattern_id": "spend_without_households",
+  "section": "pattern",
+  "pattern": "More than a quarter of spend on types where the council reports fewer than one household",
+  "may_mean": "Spend and households classified on different lines; compare totals, not types [Likely].",
+  "london": 0,
+  "rest_of_england": 14,
+  "england": 14
+ },
+ {
+  "pattern_id": "estimated",
+  "section": "pattern",
+  "pattern": "One of the five counts missing",
+  "may_mean": "The missing count is estimated, between its neighbours or, for the first or last count, copied from the nearest one, so the yearly average is an estimate [Certain].",
+  "london": 8,
+  "rest_of_england": 9,
+  "england": 17
+ }
+]

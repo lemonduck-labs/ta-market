@@ -1,0 +1,404 @@
+{
+ "spec_version": "1",
+ "about": "Inputs for tamarket/scenario.py with its exact outputs, for testing a port of the arithmetic. Arithmetic on the inputs a council sets, never a forecast.",
+ "formulae": {
+  "gross_difference_per_year": "households_moved * price_gap_per_household_year",
+  "void_cost_per_year": "households_moved * void_cost_per_household_year",
+  "net_difference_per_year": "households_moved * (price_gap_per_household_year - void_cost_per_household_year)",
+  "set_up_cost": "households_moved * setup_cost_per_household",
+  "net_difference_over_term": "lease_term_years * households_moved * (price_gap_per_household_year - void_cost_per_household_year) - households_moved * setup_cost_per_household",
+  "payback_years": "setup_cost_per_household / (price_gap_per_household_year - void_cost_per_household_year), only when the difference is above 0"
+ },
+ "rounding": "Each money result: sign(x) * floor(|x| + 0.5) on the unrounded value, computed in the order of the formulae in IEEE 754 double precision. payback_years: sign(x) * floor(|x| * 100 + 0.5) / 100, or null when the net difference per household-year is 0 or less. recovered_within_term: payback_years is not null and is at most lease_term_years.",
+ "validation": "Errors are listed in the order of the required fields (households_moved, from_type, to_type, price_gap_per_household_year, setup_cost_per_household, void_cost_per_household_year, lease_term_years), then the checks on households_on_from_type (its own error, or households_moved over it), then every field that is not an input, sorted. A required field gives at most one error. A value is a number only when it is a finite number and not true or false.",
+ "note_texts": {
+  "never_recovered": "On these inputs the new homes cost the same or more each year once voids are counted, so the set-up cost is never recovered [Certain: arithmetic].",
+  "not_recovered_in_term": "On these inputs the set-up cost is not recovered within the lease term [Certain: arithmetic].",
+  "negative_gap": "A negative price gap means the new type costs more per household-year on your inputs [Certain]."
+ },
+ "max_lease_years": 30,
+ "accommodation_types": [
+  "bed_and_breakfast",
+  "nightly_paid_self_contained",
+  "hostels",
+  "private_sector_leased",
+  "la_ha_stock",
+  "other"
+ ],
+ "cases": [
+  {
+   "id": "s01",
+   "what": "typical move",
+   "inputs": {
+    "households_moved": 20,
+    "from_type": "nightly_paid_self_contained",
+    "to_type": "private_sector_leased",
+    "price_gap_per_household_year": 4000,
+    "setup_cost_per_household": 1500,
+    "void_cost_per_household_year": 500,
+    "lease_term_years": 5
+   },
+   "expected": {
+    "results": {
+     "gross_difference_per_year": 80000,
+     "void_cost_per_year": 10000,
+     "net_difference_per_year": 70000,
+     "set_up_cost": 30000,
+     "net_difference_over_term": 320000,
+     "payback_years": 0.43,
+     "recovered_within_term": true
+    },
+    "notes": []
+   }
+  },
+  {
+   "id": "s02",
+   "what": "no set-up or void cost",
+   "inputs": {
+    "households_moved": 1,
+    "from_type": "bed_and_breakfast",
+    "to_type": "hostels",
+    "price_gap_per_household_year": 1000,
+    "setup_cost_per_household": 0,
+    "void_cost_per_household_year": 0,
+    "lease_term_years": 1
+   },
+   "expected": {
+    "results": {
+     "gross_difference_per_year": 1000,
+     "void_cost_per_year": 0,
+     "net_difference_per_year": 1000,
+     "set_up_cost": 0,
+     "net_difference_over_term": 1000,
+     "payback_years": 0.0,
+     "recovered_within_term": true
+    },
+    "notes": []
+   }
+  },
+  {
+   "id": "s03",
+   "what": "negative gap",
+   "inputs": {
+    "households_moved": 20,
+    "from_type": "private_sector_leased",
+    "to_type": "nightly_paid_self_contained",
+    "price_gap_per_household_year": -2000,
+    "setup_cost_per_household": 1000,
+    "void_cost_per_household_year": 300,
+    "lease_term_years": 5
+   },
+   "expected": {
+    "results": {
+     "gross_difference_per_year": -40000,
+     "void_cost_per_year": 6000,
+     "net_difference_per_year": -46000,
+     "set_up_cost": 20000,
+     "net_difference_over_term": -250000,
+     "payback_years": null,
+     "recovered_within_term": false
+    },
+    "notes": [
+     "negative_gap",
+     "never_recovered"
+    ]
+   }
+  },
+  {
+   "id": "s04",
+   "what": "void cost equals the gap",
+   "inputs": {
+    "households_moved": 12,
+    "from_type": "nightly_paid_self_contained",
+    "to_type": "private_sector_leased",
+    "price_gap_per_household_year": 500,
+    "setup_cost_per_household": 250,
+    "void_cost_per_household_year": 500,
+    "lease_term_years": 3
+   },
+   "expected": {
+    "results": {
+     "gross_difference_per_year": 6000,
+     "void_cost_per_year": 6000,
+     "net_difference_per_year": 0,
+     "set_up_cost": 3000,
+     "net_difference_over_term": -3000,
+     "payback_years": null,
+     "recovered_within_term": false
+    },
+    "notes": [
+     "never_recovered"
+    ]
+   }
+  },
+  {
+   "id": "s05",
+   "what": "payback after the term",
+   "inputs": {
+    "households_moved": 10,
+    "from_type": "nightly_paid_self_contained",
+    "to_type": "private_sector_leased",
+    "price_gap_per_household_year": 1000,
+    "setup_cost_per_household": 6000,
+    "void_cost_per_household_year": 200,
+    "lease_term_years": 3
+   },
+   "expected": {
+    "results": {
+     "gross_difference_per_year": 10000,
+     "void_cost_per_year": 2000,
+     "net_difference_per_year": 8000,
+     "set_up_cost": 60000,
+     "net_difference_over_term": -36000,
+     "payback_years": 7.5,
+     "recovered_within_term": false
+    },
+    "notes": [
+     "not_recovered_in_term"
+    ]
+   }
+  },
+  {
+   "id": "s06",
+   "what": "decimals and a part-year term",
+   "inputs": {
+    "households_moved": 7,
+    "from_type": "hostels",
+    "to_type": "la_ha_stock",
+    "price_gap_per_household_year": 1234.56,
+    "setup_cost_per_household": 789.1,
+    "void_cost_per_household_year": 100.25,
+    "lease_term_years": 2.5
+   },
+   "expected": {
+    "results": {
+     "gross_difference_per_year": 8642,
+     "void_cost_per_year": 702,
+     "net_difference_per_year": 7940,
+     "set_up_cost": 5524,
+     "net_difference_over_term": 14327,
+     "payback_years": 0.7,
+     "recovered_within_term": true
+    },
+    "notes": []
+   }
+  },
+  {
+   "id": "s07",
+   "what": "halves round away from zero",
+   "inputs": {
+    "households_moved": 3,
+    "from_type": "other",
+    "to_type": "hostels",
+    "price_gap_per_household_year": 0.5,
+    "setup_cost_per_household": 0.5,
+    "void_cost_per_household_year": 0,
+    "lease_term_years": 1
+   },
+   "expected": {
+    "results": {
+     "gross_difference_per_year": 2,
+     "void_cost_per_year": 0,
+     "net_difference_per_year": 2,
+     "set_up_cost": 2,
+     "net_difference_over_term": 0,
+     "payback_years": 1.0,
+     "recovered_within_term": true
+    },
+    "notes": []
+   }
+  },
+  {
+   "id": "s08",
+   "what": "negative halves round away from zero",
+   "inputs": {
+    "households_moved": 3,
+    "from_type": "hostels",
+    "to_type": "other",
+    "price_gap_per_household_year": -0.5,
+    "setup_cost_per_household": 0,
+    "void_cost_per_household_year": 0,
+    "lease_term_years": 2
+   },
+   "expected": {
+    "results": {
+     "gross_difference_per_year": -2,
+     "void_cost_per_year": 0,
+     "net_difference_per_year": -2,
+     "set_up_cost": 0,
+     "net_difference_over_term": -3,
+     "payback_years": null,
+     "recovered_within_term": false
+    },
+    "notes": [
+     "negative_gap",
+     "never_recovered"
+    ]
+   }
+  },
+  {
+   "id": "s09",
+   "what": "within the households on the type",
+   "inputs": {
+    "households_moved": 30,
+    "from_type": "bed_and_breakfast",
+    "to_type": "private_sector_leased",
+    "price_gap_per_household_year": 9000,
+    "setup_cost_per_household": 2000,
+    "void_cost_per_household_year": 750,
+    "lease_term_years": 10,
+    "households_on_from_type": 40
+   },
+   "expected": {
+    "results": {
+     "gross_difference_per_year": 270000,
+     "void_cost_per_year": 22500,
+     "net_difference_per_year": 247500,
+     "set_up_cost": 60000,
+     "net_difference_over_term": 2415000,
+     "payback_years": 0.24,
+     "recovered_within_term": true
+    },
+    "notes": []
+   }
+  },
+  {
+   "id": "s10",
+   "what": "no households moved",
+   "inputs": {
+    "households_moved": 0,
+    "from_type": "nightly_paid_self_contained",
+    "to_type": "private_sector_leased",
+    "price_gap_per_household_year": 4000,
+    "setup_cost_per_household": 1500,
+    "void_cost_per_household_year": 500,
+    "lease_term_years": 5
+   },
+   "expected": {
+    "errors": [
+     {
+      "field": "households_moved",
+      "error": "must be at least 1"
+     }
+    ]
+   }
+  },
+  {
+   "id": "s11",
+   "what": "several bad inputs at once",
+   "inputs": {
+    "households_moved": 2.5,
+    "from_type": "hotel",
+    "price_gap_per_household_year": "1000",
+    "setup_cost_per_household": -5,
+    "void_cost_per_household_year": -1,
+    "lease_term_years": 0
+   },
+   "expected": {
+    "errors": [
+     {
+      "field": "households_moved",
+      "error": "must be a whole number"
+     },
+     {
+      "field": "from_type",
+      "error": "must be one of: bed_and_breakfast, nightly_paid_self_contained, hostels, private_sector_leased, la_ha_stock, other"
+     },
+     {
+      "field": "to_type",
+      "error": "required"
+     },
+     {
+      "field": "price_gap_per_household_year",
+      "error": "must be a number"
+     },
+     {
+      "field": "setup_cost_per_household",
+      "error": "must be 0 or more"
+     },
+     {
+      "field": "void_cost_per_household_year",
+      "error": "must be 0 or more"
+     },
+     {
+      "field": "lease_term_years",
+      "error": "must be more than 0"
+     }
+    ]
+   }
+  },
+  {
+   "id": "s12",
+   "what": "same type twice and too long a term",
+   "inputs": {
+    "households_moved": 5,
+    "from_type": "hostels",
+    "to_type": "hostels",
+    "price_gap_per_household_year": 100,
+    "setup_cost_per_household": 0,
+    "void_cost_per_household_year": 0,
+    "lease_term_years": 31
+   },
+   "expected": {
+    "errors": [
+     {
+      "field": "to_type",
+      "error": "must differ from from_type"
+     },
+     {
+      "field": "lease_term_years",
+      "error": "must be 30 or less"
+     }
+    ]
+   }
+  },
+  {
+   "id": "s13",
+   "what": "more households than are on the type",
+   "inputs": {
+    "households_moved": 50,
+    "from_type": "bed_and_breakfast",
+    "to_type": "private_sector_leased",
+    "price_gap_per_household_year": 9000,
+    "setup_cost_per_household": 2000,
+    "void_cost_per_household_year": 750,
+    "lease_term_years": 10,
+    "households_on_from_type": 40
+   },
+   "expected": {
+    "errors": [
+     {
+      "field": "households_moved",
+      "error": "must not be more than households_on_from_type"
+     }
+    ]
+   }
+  },
+  {
+   "id": "s14",
+   "what": "a yes or no is not a number, and unknown inputs",
+   "inputs": {
+    "households_moved": true,
+    "from_type": "nightly_paid_self_contained",
+    "to_type": "private_sector_leased",
+    "price_gap_per_household_year": 4000,
+    "setup_cost_per_household": 1500,
+    "void_cost_per_household_year": 500,
+    "lease_term_years": 5,
+    "discount_rate": 0.035
+   },
+   "expected": {
+    "errors": [
+     {
+      "field": "households_moved",
+      "error": "must be a number"
+     },
+     {
+      "field": "discount_rate",
+      "error": "not an input"
+     }
+    ]
+   }
+  }
+ ]
+}

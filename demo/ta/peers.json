@@ -1,0 +1,1458 @@
+[
+ {
+  "point": "2024-25-L001",
+  "year": "2024-25",
+  "group": "London",
+  "gross": 12640.0,
+  "net": 8270.0,
+  "households": 1270
+ },
+ {
+  "point": "2024-25-L002",
+  "year": "2024-25",
+  "group": "London",
+  "gross": 13050.0,
+  "net": 2390.0,
+  "households": 1090
+ },
+ {
+  "point": "2024-25-L003",
+  "year": "2024-25",
+  "group": "London",
+  "gross": 13670.0,
+  "net": 7750.0,
+  "households": 1030
+ },
+ {
+  "point": "2024-25-L004",
+  "year": "2024-25",
+  "group": "London",
+  "gross": 14780.0,
+  "net": 8830.0,
+  "households": 1450
+ },
+ {
+  "point": "2024-25-L005",
+  "year": "2024-25",
+  "group": "London",
+  "gross": 16100.0,
+  "net": 4320.0,
+  "households": 1830
+ },
+ {
+  "point": "2024-25-L006",
+  "year": "2024-25",
+  "group": "London",
+  "gross": 16340.0,
+  "net": 9070.0,
+  "households": 3930
+ },
+ {
+  "point": "2024-25-L007",
+  "year": "2024-25",
+  "group": "London",
+  "gross": 16390.0,
+  "net": 8900.0,
+  "households": 3480
+ },
+ {
+  "point": "2024-25-L008",
+  "year": "2024-25",
+  "group": "London",
+  "gross": 18290.0,
+  "net": 7320.0,
+  "households": 1520
+ },
+ {
+  "point": "2024-25-L009",
+  "year": "2024-25",
+  "group": "London",
+  "gross": 19830.0,
+  "net": 11260.0,
+  "households": 1800
+ },
+ {
+  "point": "2024-25-L010",
+  "year": "2024-25",
+  "group": "London",
+  "gross": 19850.0,
+  "net": 7490.0,
+  "households": 2880
+ },
+ {
+  "point": "2024-25-L011",
+  "year": "2024-25",
+  "group": "London",
+  "gross": 19860.0,
+  "net": 9070.0,
+  "households": 3430
+ },
+ {
+  "point": "2024-25-L012",
+  "year": "2024-25",
+  "group": "London",
+  "gross": 20940.0,
+  "net": 9490.0,
+  "households": 2650
+ },
+ {
+  "point": "2024-25-L013",
+  "year": "2024-25",
+  "group": "London",
+  "gross": 21720.0,
+  "net": 11080.0,
+  "households": 490
+ },
+ {
+  "point": "2024-25-L014",
+  "year": "2024-25",
+  "group": "London",
+  "gross": 21990.0,
+  "net": 10180.0,
+  "households": 6680
+ },
+ {
+  "point": "2024-25-L015",
+  "year": "2024-25",
+  "group": "London",
+  "gross": 23000.0,
+  "net": 4020.0,
+  "households": 3170
+ },
+ {
+  "point": "2024-25-L016",
+  "year": "2024-25",
+  "group": "London",
+  "gross": 23900.0,
+  "net": 10120.0,
+  "households": 3400
+ },
+ {
+  "point": "2024-25-L017",
+  "year": "2024-25",
+  "group": "London",
+  "gross": 24090.0,
+  "net": 15730.0,
+  "households": 620
+ },
+ {
+  "point": "2024-25-L018",
+  "year": "2024-25",
+  "group": "London",
+  "gross": 26830.0,
+  "net": 13020.0,
+  "households": 1400
+ },
+ {
+  "point": "2024-25-L019",
+  "year": "2024-25",
+  "group": "London",
+  "gross": 26860.0,
+  "net": 15250.0,
+  "households": 550
+ },
+ {
+  "point": "2024-25-L020",
+  "year": "2024-25",
+  "group": "London",
+  "gross": 27230.0,
+  "net": 4410.0,
+  "households": 2590
+ },
+ {
+  "point": "2024-25-L021",
+  "year": "2024-25",
+  "group": "London",
+  "gross": 30060.0,
+  "net": 16310.0,
+  "households": 1410
+ },
+ {
+  "point": "2024-25-L022",
+  "year": "2024-25",
+  "group": "London",
+  "gross": 37870.0,
+  "net": 19820.0,
+  "households": 3660
+ },
+ {
+  "point": "2024-25-L023",
+  "year": "2024-25",
+  "group": "London",
+  "gross": 38440.0,
+  "net": 15770.0,
+  "households": 610
+ },
+ {
+  "point": "2024-25-R001",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 490.0,
+  "net": -1860.0,
+  "households": 160
+ },
+ {
+  "point": "2024-25-R002",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 840.0,
+  "net": 840.0,
+  "households": 160
+ },
+ {
+  "point": "2024-25-R003",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 860.0,
+  "net": 860.0,
+  "households": 60
+ },
+ {
+  "point": "2024-25-R004",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 870.0,
+  "net": 860.0,
+  "households": 350
+ },
+ {
+  "point": "2024-25-R005",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 1030.0,
+  "net": 1030.0,
+  "households": 220
+ },
+ {
+  "point": "2024-25-R006",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 1040.0,
+  "net": 990.0,
+  "households": 70
+ },
+ {
+  "point": "2024-25-R007",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 1190.0,
+  "net": -8620.0,
+  "households": 100
+ },
+ {
+  "point": "2024-25-R008",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 1850.0,
+  "net": 1540.0,
+  "households": 230
+ },
+ {
+  "point": "2024-25-R009",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 2150.0,
+  "net": 2150.0,
+  "households": 230
+ },
+ {
+  "point": "2024-25-R010",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 2170.0,
+  "net": -120.0,
+  "households": 50
+ },
+ {
+  "point": "2024-25-R011",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 2250.0,
+  "net": -710.0,
+  "households": 240
+ },
+ {
+  "point": "2024-25-R012",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 2790.0,
+  "net": 2790.0,
+  "households": 380
+ },
+ {
+  "point": "2024-25-R013",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 2930.0,
+  "net": 1030.0,
+  "households": 80
+ },
+ {
+  "point": "2024-25-R014",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 4170.0,
+  "net": 3060.0,
+  "households": 160
+ },
+ {
+  "point": "2024-25-R015",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 4260.0,
+  "net": 3050.0,
+  "households": 70
+ },
+ {
+  "point": "2024-25-R016",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 4550.0,
+  "net": 3620.0,
+  "households": 100
+ },
+ {
+  "point": "2024-25-R017",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 4610.0,
+  "net": 2510.0,
+  "households": 60
+ },
+ {
+  "point": "2024-25-R018",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 5050.0,
+  "net": 4190.0,
+  "households": 80
+ },
+ {
+  "point": "2024-25-R019",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 5140.0,
+  "net": 2130.0,
+  "households": 100
+ },
+ {
+  "point": "2024-25-R020",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 5180.0,
+  "net": 1440.0,
+  "households": 160
+ },
+ {
+  "point": "2024-25-R021",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 5220.0,
+  "net": 4370.0,
+  "households": 100
+ },
+ {
+  "point": "2024-25-R022",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 5520.0,
+  "net": 3170.0,
+  "households": 340
+ },
+ {
+  "point": "2024-25-R023",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 6140.0,
+  "net": 4620.0,
+  "households": 60
+ },
+ {
+  "point": "2024-25-R024",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 6150.0,
+  "net": 1220.0,
+  "households": 710
+ },
+ {
+  "point": "2024-25-R025",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 6270.0,
+  "net": 2740.0,
+  "households": 170
+ },
+ {
+  "point": "2024-25-R026",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 6270.0,
+  "net": 1250.0,
+  "households": 150
+ },
+ {
+  "point": "2024-25-R027",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 6550.0,
+  "net": -5300.0,
+  "households": 60
+ },
+ {
+  "point": "2024-25-R028",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 6610.0,
+  "net": -70.0,
+  "households": 60
+ },
+ {
+  "point": "2024-25-R029",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 7320.0,
+  "net": 2310.0,
+  "households": 210
+ },
+ {
+  "point": "2024-25-R030",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 7320.0,
+  "net": 110.0,
+  "households": 120
+ },
+ {
+  "point": "2024-25-R031",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 7460.0,
+  "net": 4130.0,
+  "households": 180
+ },
+ {
+  "point": "2024-25-R032",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 7520.0,
+  "net": 5750.0,
+  "households": 80
+ },
+ {
+  "point": "2024-25-R033",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 7530.0,
+  "net": 6780.0,
+  "households": 350
+ },
+ {
+  "point": "2024-25-R034",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 8740.0,
+  "net": 6390.0,
+  "households": 110
+ },
+ {
+  "point": "2024-25-R035",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 8770.0,
+  "net": -1650.0,
+  "households": 240
+ },
+ {
+  "point": "2024-25-R036",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 9260.0,
+  "net": 8470.0,
+  "households": 70
+ },
+ {
+  "point": "2024-25-R037",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 9430.0,
+  "net": 7000.0,
+  "households": 160
+ },
+ {
+  "point": "2024-25-R038",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 9680.0,
+  "net": 3120.0,
+  "households": 80
+ },
+ {
+  "point": "2024-25-R039",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 9810.0,
+  "net": -1370.0,
+  "households": 370
+ },
+ {
+  "point": "2024-25-R040",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 9870.0,
+  "net": 7360.0,
+  "households": 180
+ },
+ {
+  "point": "2024-25-R041",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 9890.0,
+  "net": 3220.0,
+  "households": 50
+ },
+ {
+  "point": "2024-25-R042",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 10040.0,
+  "net": -60.0,
+  "households": 70
+ },
+ {
+  "point": "2024-25-R043",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 10320.0,
+  "net": 5760.0,
+  "households": 100
+ },
+ {
+  "point": "2024-25-R044",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 10390.0,
+  "net": 4610.0,
+  "households": 110
+ },
+ {
+  "point": "2024-25-R045",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 10450.0,
+  "net": 1470.0,
+  "households": 320
+ },
+ {
+  "point": "2024-25-R046",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 10780.0,
+  "net": -4350.0,
+  "households": 100
+ },
+ {
+  "point": "2024-25-R047",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 10960.0,
+  "net": 10960.0,
+  "households": 310
+ },
+ {
+  "point": "2024-25-R048",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 11030.0,
+  "net": 6810.0,
+  "households": 60
+ },
+ {
+  "point": "2024-25-R049",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 11330.0,
+  "net": 4160.0,
+  "households": 1580
+ },
+ {
+  "point": "2024-25-R050",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 11570.0,
+  "net": 4680.0,
+  "households": 140
+ },
+ {
+  "point": "2024-25-R051",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 11820.0,
+  "net": 6580.0,
+  "households": 240
+ },
+ {
+  "point": "2024-25-R052",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 12340.0,
+  "net": 1060.0,
+  "households": 140
+ },
+ {
+  "point": "2024-25-R053",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 12370.0,
+  "net": 9960.0,
+  "households": 260
+ },
+ {
+  "point": "2024-25-R054",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 12450.0,
+  "net": 5080.0,
+  "households": 50
+ },
+ {
+  "point": "2024-25-R055",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 12790.0,
+  "net": -410.0,
+  "households": 160
+ },
+ {
+  "point": "2024-25-R056",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 13160.0,
+  "net": 9270.0,
+  "households": 70
+ },
+ {
+  "point": "2024-25-R057",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 13670.0,
+  "net": 5580.0,
+  "households": 5140
+ },
+ {
+  "point": "2024-25-R058",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 13740.0,
+  "net": 12590.0,
+  "households": 110
+ },
+ {
+  "point": "2024-25-R059",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 13820.0,
+  "net": 9310.0,
+  "households": 70
+ },
+ {
+  "point": "2024-25-R060",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 13840.0,
+  "net": 3430.0,
+  "households": 100
+ },
+ {
+  "point": "2024-25-R061",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 14110.0,
+  "net": 8280.0,
+  "households": 370
+ },
+ {
+  "point": "2024-25-R062",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 14230.0,
+  "net": 3050.0,
+  "households": 130
+ },
+ {
+  "point": "2024-25-R063",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 14370.0,
+  "net": 9040.0,
+  "households": 290
+ },
+ {
+  "point": "2024-25-R064",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 14380.0,
+  "net": 3860.0,
+  "households": 60
+ },
+ {
+  "point": "2024-25-R065",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 14410.0,
+  "net": 5570.0,
+  "households": 170
+ },
+ {
+  "point": "2024-25-R066",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 14480.0,
+  "net": 330.0,
+  "households": 260
+ },
+ {
+  "point": "2024-25-R067",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 14530.0,
+  "net": 910.0,
+  "households": 100
+ },
+ {
+  "point": "2024-25-R068",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 14630.0,
+  "net": 14630.0,
+  "households": 770
+ },
+ {
+  "point": "2024-25-R069",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 14740.0,
+  "net": 4120.0,
+  "households": 70
+ },
+ {
+  "point": "2024-25-R070",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 14870.0,
+  "net": 7930.0,
+  "households": 390
+ },
+ {
+  "point": "2024-25-R071",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 14880.0,
+  "net": 9130.0,
+  "households": 1120
+ },
+ {
+  "point": "2024-25-R072",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 15160.0,
+  "net": 3810.0,
+  "households": 50
+ },
+ {
+  "point": "2024-25-R073",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 15190.0,
+  "net": 10860.0,
+  "households": 720
+ },
+ {
+  "point": "2024-25-R074",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 15370.0,
+  "net": 7460.0,
+  "households": 70
+ },
+ {
+  "point": "2024-25-R075",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 15710.0,
+  "net": 14410.0,
+  "households": 370
+ },
+ {
+  "point": "2024-25-R076",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 15720.0,
+  "net": 3270.0,
+  "households": 50
+ },
+ {
+  "point": "2024-25-R077",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 15720.0,
+  "net": 8810.0,
+  "households": 280
+ },
+ {
+  "point": "2024-25-R078",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 15940.0,
+  "net": 11220.0,
+  "households": 300
+ },
+ {
+  "point": "2024-25-R079",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 16100.0,
+  "net": 5220.0,
+  "households": 70
+ },
+ {
+  "point": "2024-25-R080",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 16670.0,
+  "net": 3520.0,
+  "households": 50
+ },
+ {
+  "point": "2024-25-R081",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 16850.0,
+  "net": 2940.0,
+  "households": 1240
+ },
+ {
+  "point": "2024-25-R082",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 17250.0,
+  "net": 1530.0,
+  "households": 70
+ },
+ {
+  "point": "2024-25-R083",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 17380.0,
+  "net": 11940.0,
+  "households": 80
+ },
+ {
+  "point": "2024-25-R084",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 17600.0,
+  "net": 9510.0,
+  "households": 550
+ },
+ {
+  "point": "2024-25-R085",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 17610.0,
+  "net": 9980.0,
+  "households": 460
+ },
+ {
+  "point": "2024-25-R086",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 17720.0,
+  "net": -1060.0,
+  "households": 80
+ },
+ {
+  "point": "2024-25-R087",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 17930.0,
+  "net": 1480.0,
+  "households": 310
+ },
+ {
+  "point": "2024-25-R088",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 17970.0,
+  "net": 11200.0,
+  "households": 560
+ },
+ {
+  "point": "2024-25-R089",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 18010.0,
+  "net": 12450.0,
+  "households": 240
+ },
+ {
+  "point": "2024-25-R090",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 18090.0,
+  "net": 13440.0,
+  "households": 70
+ },
+ {
+  "point": "2024-25-R091",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 18300.0,
+  "net": 8870.0,
+  "households": 130
+ },
+ {
+  "point": "2024-25-R092",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 18470.0,
+  "net": 8950.0,
+  "households": 720
+ },
+ {
+  "point": "2024-25-R093",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 18590.0,
+  "net": 8220.0,
+  "households": 70
+ },
+ {
+  "point": "2024-25-R094",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 18630.0,
+  "net": 15830.0,
+  "households": 200
+ },
+ {
+  "point": "2024-25-R095",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 18670.0,
+  "net": 2160.0,
+  "households": 480
+ },
+ {
+  "point": "2024-25-R096",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 18800.0,
+  "net": -11250.0,
+  "households": 90
+ },
+ {
+  "point": "2024-25-R097",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 19060.0,
+  "net": 7620.0,
+  "households": 240
+ },
+ {
+  "point": "2024-25-R098",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 19580.0,
+  "net": 5080.0,
+  "households": 60
+ },
+ {
+  "point": "2024-25-R099",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 19590.0,
+  "net": 1670.0,
+  "households": 450
+ },
+ {
+  "point": "2024-25-R100",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 19820.0,
+  "net": 12120.0,
+  "households": 160
+ },
+ {
+  "point": "2024-25-R101",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 19850.0,
+  "net": 10580.0,
+  "households": 130
+ },
+ {
+  "point": "2024-25-R102",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 19970.0,
+  "net": 13450.0,
+  "households": 190
+ },
+ {
+  "point": "2024-25-R103",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 20030.0,
+  "net": 7000.0,
+  "households": 80
+ },
+ {
+  "point": "2024-25-R104",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 20280.0,
+  "net": 6370.0,
+  "households": 780
+ },
+ {
+  "point": "2024-25-R105",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 20300.0,
+  "net": 13200.0,
+  "households": 370
+ },
+ {
+  "point": "2024-25-R106",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 20430.0,
+  "net": 13480.0,
+  "households": 240
+ },
+ {
+  "point": "2024-25-R107",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 20540.0,
+  "net": 7920.0,
+  "households": 110
+ },
+ {
+  "point": "2024-25-R108",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 20570.0,
+  "net": 7320.0,
+  "households": 1100
+ },
+ {
+  "point": "2024-25-R109",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 20690.0,
+  "net": 7730.0,
+  "households": 50
+ },
+ {
+  "point": "2024-25-R110",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 20790.0,
+  "net": 12280.0,
+  "households": 390
+ },
+ {
+  "point": "2024-25-R111",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 20830.0,
+  "net": 20340.0,
+  "households": 210
+ },
+ {
+  "point": "2024-25-R112",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 21200.0,
+  "net": 9440.0,
+  "households": 2770
+ },
+ {
+  "point": "2024-25-R113",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 21200.0,
+  "net": 7010.0,
+  "households": 220
+ },
+ {
+  "point": "2024-25-R114",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 21210.0,
+  "net": 14360.0,
+  "households": 580
+ },
+ {
+  "point": "2024-25-R115",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 21500.0,
+  "net": -350.0,
+  "households": 50
+ },
+ {
+  "point": "2024-25-R116",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 21620.0,
+  "net": 21620.0,
+  "households": 100
+ },
+ {
+  "point": "2024-25-R117",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 21770.0,
+  "net": 8480.0,
+  "households": 120
+ },
+ {
+  "point": "2024-25-R118",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 21850.0,
+  "net": 3210.0,
+  "households": 120
+ },
+ {
+  "point": "2024-25-R119",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 21870.0,
+  "net": 6410.0,
+  "households": 90
+ },
+ {
+  "point": "2024-25-R120",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 21900.0,
+  "net": 21900.0,
+  "households": 160
+ },
+ {
+  "point": "2024-25-R121",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 21950.0,
+  "net": 10080.0,
+  "households": 120
+ },
+ {
+  "point": "2024-25-R122",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 22100.0,
+  "net": 12910.0,
+  "households": 290
+ },
+ {
+  "point": "2024-25-R123",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 22130.0,
+  "net": 15630.0,
+  "households": 340
+ },
+ {
+  "point": "2024-25-R124",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 23240.0,
+  "net": 11430.0,
+  "households": 550
+ },
+ {
+  "point": "2024-25-R125",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 23290.0,
+  "net": 18230.0,
+  "households": 110
+ },
+ {
+  "point": "2024-25-R126",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 23990.0,
+  "net": 14450.0,
+  "households": 1560
+ },
+ {
+  "point": "2024-25-R127",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 23990.0,
+  "net": 12030.0,
+  "households": 240
+ },
+ {
+  "point": "2024-25-R128",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 24290.0,
+  "net": 16520.0,
+  "households": 190
+ },
+ {
+  "point": "2024-25-R129",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 24590.0,
+  "net": 3160.0,
+  "households": 170
+ },
+ {
+  "point": "2024-25-R130",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 24620.0,
+  "net": 21430.0,
+  "households": 250
+ },
+ {
+  "point": "2024-25-R131",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 25130.0,
+  "net": -2050.0,
+  "households": 150
+ },
+ {
+  "point": "2024-25-R132",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 26350.0,
+  "net": 13310.0,
+  "households": 70
+ },
+ {
+  "point": "2024-25-R133",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 26980.0,
+  "net": 18370.0,
+  "households": 60
+ },
+ {
+  "point": "2024-25-R134",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 27360.0,
+  "net": 13980.0,
+  "households": 130
+ },
+ {
+  "point": "2024-25-R135",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 27510.0,
+  "net": 7700.0,
+  "households": 140
+ },
+ {
+  "point": "2024-25-R136",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 28640.0,
+  "net": 14940.0,
+  "households": 60
+ },
+ {
+  "point": "2024-25-R137",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 28860.0,
+  "net": 25840.0,
+  "households": 850
+ },
+ {
+  "point": "2024-25-R138",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 29820.0,
+  "net": 23050.0,
+  "households": 220
+ },
+ {
+  "point": "2024-25-R139",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 30470.0,
+  "net": 11330.0,
+  "households": 480
+ },
+ {
+  "point": "2024-25-R140",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 31340.0,
+  "net": 5240.0,
+  "households": 1140
+ },
+ {
+  "point": "2024-25-R141",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 31980.0,
+  "net": 22920.0,
+  "households": 270
+ },
+ {
+  "point": "2024-25-R142",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 32030.0,
+  "net": 4160.0,
+  "households": 170
+ },
+ {
+  "point": "2024-25-R143",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 32160.0,
+  "net": 18480.0,
+  "households": 80
+ },
+ {
+  "point": "2024-25-R144",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 32840.0,
+  "net": 20380.0,
+  "households": 90
+ },
+ {
+  "point": "2024-25-R145",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 35180.0,
+  "net": 12690.0,
+  "households": 80
+ },
+ {
+  "point": "2024-25-R146",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 35750.0,
+  "net": 27210.0,
+  "households": 90
+ },
+ {
+  "point": "2024-25-R147",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 35820.0,
+  "net": 32450.0,
+  "households": 1080
+ },
+ {
+  "point": "2024-25-R148",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 35850.0,
+  "net": 28540.0,
+  "households": 180
+ },
+ {
+  "point": "2024-25-R149",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 37700.0,
+  "net": 5160.0,
+  "households": 210
+ },
+ {
+  "point": "2024-25-R150",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 39370.0,
+  "net": 33010.0,
+  "households": 100
+ },
+ {
+  "point": "2024-25-R151",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 41590.0,
+  "net": 29670.0,
+  "households": 100
+ },
+ {
+  "point": "2024-25-R152",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 41900.0,
+  "net": 21280.0,
+  "households": 410
+ },
+ {
+  "point": "2024-25-R153",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 42180.0,
+  "net": 17360.0,
+  "households": 50
+ },
+ {
+  "point": "2024-25-R154",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 44400.0,
+  "net": 290.0,
+  "households": 60
+ },
+ {
+  "point": "2024-25-R155",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 45150.0,
+  "net": 19630.0,
+  "households": 70
+ },
+ {
+  "point": "2024-25-R156",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 45250.0,
+  "net": 33440.0,
+  "households": 570
+ },
+ {
+  "point": "2024-25-R157",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 48960.0,
+  "net": 22420.0,
+  "households": 50
+ },
+ {
+  "point": "2024-25-R158",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 75780.0,
+  "net": 63200.0,
+  "households": 200
+ },
+ {
+  "point": "2024-25-R159",
+  "year": "2024-25",
+  "group": "Rest of England",
+  "gross": 87710.0,
+  "net": 41920.0,
+  "households": 60
+ }
+]

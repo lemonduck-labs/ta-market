@@ -1,0 +1,1211 @@
+{
+ "meta": {
+  "attribution": "Contains public sector information licensed under the Open Government Licence v3.0. Licence: https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
+  "built_from": "data/processed (MHCLG TA1 and RO4)",
+  "year": "2024-25",
+  "first_release": "2025-26",
+  "note": "No council is named. Examples are chosen by fixed rules in scripts/build_demo_data.py. Councils with a data check outstanding are counted, not shown."
+ },
+ "national": {
+  "2024-25": {
+   "households": 125235,
+   "gross_accom": 2652506638.0,
+   "net_accom": 1263750319.0,
+   "ta_total": 2823857788.0,
+   "gross_per_household": 21180.0,
+   "net_per_household": 10090.0,
+   "first_release": false
+  },
+  "2025-26": {
+   "households": 133604,
+   "gross_accom": 2728665469.0,
+   "net_accom": 1312165113.0,
+   "ta_total": 2934629171.0,
+   "gross_per_household": 20420.0,
+   "net_per_household": 9820.0,
+   "first_release": true
+  }
+ },
+ "by_type": {
+  "2024-25": {
+   "Bed and breakfast": {
+    "households": 17280,
+    "gross": 711665377.0,
+    "gross_per_household": 41180.0
+   },
+   "Nightly-paid, self-contained": {
+    "households": 39771,
+    "gross": 1070834360.0,
+    "gross_per_household": 26920.0
+   },
+   "Hostels": {
+    "households": 6734,
+    "gross": 101833025.0,
+    "gross_per_household": 15120.0
+   },
+   "Private sector leased": {
+    "households": 26613,
+    "gross": 562751690.0,
+    "gross_per_household": 21150.0
+   },
+   "Council or housing association stock": {
+    "households": 29441,
+    "gross": 124118546.0,
+    "gross_per_household": 4220.0
+   },
+   "Other": {
+    "households": 5396,
+    "gross": 81303640.0,
+    "gross_per_household": 15070.0
+   }
+  }
+ },
+ "spend_by_year": [
+  {
+   "year": "2023-24",
+   "bed_and_breakfast": 726174000.0,
+   "nightly_paid_self_contained": 601409000.0,
+   "hostels": 84509000.0,
+   "private_sector_leased": 522447000.0,
+   "la_ha_stock": 83716000.0,
+   "other": 108920000.0,
+   "first_release": false
+  },
+  {
+   "year": "2024-25",
+   "bed_and_breakfast": 711665377.0,
+   "nightly_paid_self_contained": 1070834360.0,
+   "hostels": 101833025.0,
+   "private_sector_leased": 562751690.0,
+   "la_ha_stock": 124118546.0,
+   "other": 81303640.0,
+   "first_release": false
+  },
+  {
+   "year": "2025-26",
+   "bed_and_breakfast": 822641057.0,
+   "nightly_paid_self_contained": 955143680.0,
+   "hostels": 109462447.0,
+   "private_sector_leased": 609155420.0,
+   "la_ha_stock": 129724014.0,
+   "other": 102538852.0,
+   "first_release": true
+  }
+ ],
+ "peers": {
+  "2024-25": {
+   "London": [
+    {
+     "gross": 12640.0,
+     "net": 8270.0,
+     "households": 1270
+    },
+    {
+     "gross": 13050.0,
+     "net": 2390.0,
+     "households": 1090
+    },
+    {
+     "gross": 13670.0,
+     "net": 7750.0,
+     "households": 1030
+    },
+    {
+     "gross": 14780.0,
+     "net": 8830.0,
+     "households": 1450
+    },
+    {
+     "gross": 16100.0,
+     "net": 4320.0,
+     "households": 1830
+    },
+    {
+     "gross": 16340.0,
+     "net": 9070.0,
+     "households": 3930
+    },
+    {
+     "gross": 16390.0,
+     "net": 8900.0,
+     "households": 3480
+    },
+    {
+     "gross": 18290.0,
+     "net": 7320.0,
+     "households": 1520
+    },
+    {
+     "gross": 19830.0,
+     "net": 11260.0,
+     "households": 1800
+    },
+    {
+     "gross": 19850.0,
+     "net": 7490.0,
+     "households": 2880
+    },
+    {
+     "gross": 19860.0,
+     "net": 9070.0,
+     "households": 3430
+    },
+    {
+     "gross": 20940.0,
+     "net": 9490.0,
+     "households": 2650
+    },
+    {
+     "gross": 21720.0,
+     "net": 11080.0,
+     "households": 490
+    },
+    {
+     "gross": 21990.0,
+     "net": 10180.0,
+     "households": 6680
+    },
+    {
+     "gross": 23000.0,
+     "net": 4020.0,
+     "households": 3170
+    },
+    {
+     "gross": 23900.0,
+     "net": 10120.0,
+     "households": 3400
+    },
+    {
+     "gross": 24090.0,
+     "net": 15730.0,
+     "households": 620
+    },
+    {
+     "gross": 26830.0,
+     "net": 13020.0,
+     "households": 1400
+    },
+    {
+     "gross": 26860.0,
+     "net": 15250.0,
+     "households": 550
+    },
+    {
+     "gross": 27230.0,
+     "net": 4410.0,
+     "households": 2590
+    },
+    {
+     "gross": 30060.0,
+     "net": 16310.0,
+     "households": 1410
+    },
+    {
+     "gross": 37870.0,
+     "net": 19820.0,
+     "households": 3660
+    },
+    {
+     "gross": 38440.0,
+     "net": 15770.0,
+     "households": 610
+    }
+   ],
+   "Rest of England": [
+    {
+     "gross": 490.0,
+     "net": -1860.0,
+     "households": 160
+    },
+    {
+     "gross": 840.0,
+     "net": 840.0,
+     "households": 160
+    },
+    {
+     "gross": 860.0,
+     "net": 860.0,
+     "households": 60
+    },
+    {
+     "gross": 870.0,
+     "net": 860.0,
+     "households": 350
+    },
+    {
+     "gross": 1030.0,
+     "net": 1030.0,
+     "households": 220
+    },
+    {
+     "gross": 1040.0,
+     "net": 990.0,
+     "households": 70
+    },
+    {
+     "gross": 1190.0,
+     "net": -8620.0,
+     "households": 100
+    },
+    {
+     "gross": 1850.0,
+     "net": 1540.0,
+     "households": 230
+    },
+    {
+     "gross": 2150.0,
+     "net": 2150.0,
+     "households": 230
+    },
+    {
+     "gross": 2170.0,
+     "net": -120.0,
+     "households": 50
+    },
+    {
+     "gross": 2250.0,
+     "net": -710.0,
+     "households": 240
+    },
+    {
+     "gross": 2790.0,
+     "net": 2790.0,
+     "households": 380
+    },
+    {
+     "gross": 2930.0,
+     "net": 1030.0,
+     "households": 80
+    },
+    {
+     "gross": 4170.0,
+     "net": 3060.0,
+     "households": 160
+    },
+    {
+     "gross": 4260.0,
+     "net": 3050.0,
+     "households": 70
+    },
+    {
+     "gross": 4550.0,
+     "net": 3620.0,
+     "households": 100
+    },
+    {
+     "gross": 4610.0,
+     "net": 2510.0,
+     "households": 60
+    },
+    {
+     "gross": 5050.0,
+     "net": 4190.0,
+     "households": 80
+    },
+    {
+     "gross": 5140.0,
+     "net": 2130.0,
+     "households": 100
+    },
+    {
+     "gross": 5180.0,
+     "net": 1440.0,
+     "households": 160
+    },
+    {
+     "gross": 5220.0,
+     "net": 4370.0,
+     "households": 100
+    },
+    {
+     "gross": 5520.0,
+     "net": 3170.0,
+     "households": 340
+    },
+    {
+     "gross": 6140.0,
+     "net": 4620.0,
+     "households": 60
+    },
+    {
+     "gross": 6150.0,
+     "net": 1220.0,
+     "households": 710
+    },
+    {
+     "gross": 6270.0,
+     "net": 2740.0,
+     "households": 170
+    },
+    {
+     "gross": 6270.0,
+     "net": 1250.0,
+     "households": 150
+    },
+    {
+     "gross": 6550.0,
+     "net": -5300.0,
+     "households": 60
+    },
+    {
+     "gross": 6610.0,
+     "net": -70.0,
+     "households": 60
+    },
+    {
+     "gross": 7320.0,
+     "net": 2310.0,
+     "households": 210
+    },
+    {
+     "gross": 7320.0,
+     "net": 110.0,
+     "households": 120
+    },
+    {
+     "gross": 7460.0,
+     "net": 4130.0,
+     "households": 180
+    },
+    {
+     "gross": 7520.0,
+     "net": 5750.0,
+     "households": 80
+    },
+    {
+     "gross": 7530.0,
+     "net": 6780.0,
+     "households": 350
+    },
+    {
+     "gross": 8740.0,
+     "net": 6390.0,
+     "households": 110
+    },
+    {
+     "gross": 8770.0,
+     "net": -1650.0,
+     "households": 240
+    },
+    {
+     "gross": 9260.0,
+     "net": 8470.0,
+     "households": 70
+    },
+    {
+     "gross": 9430.0,
+     "net": 7000.0,
+     "households": 160
+    },
+    {
+     "gross": 9680.0,
+     "net": 3120.0,
+     "households": 80
+    },
+    {
+     "gross": 9810.0,
+     "net": -1370.0,
+     "households": 370
+    },
+    {
+     "gross": 9870.0,
+     "net": 7360.0,
+     "households": 180
+    },
+    {
+     "gross": 9890.0,
+     "net": 3220.0,
+     "households": 50
+    },
+    {
+     "gross": 10040.0,
+     "net": -60.0,
+     "households": 70
+    },
+    {
+     "gross": 10320.0,
+     "net": 5760.0,
+     "households": 100
+    },
+    {
+     "gross": 10390.0,
+     "net": 4610.0,
+     "households": 110
+    },
+    {
+     "gross": 10450.0,
+     "net": 1470.0,
+     "households": 320
+    },
+    {
+     "gross": 10780.0,
+     "net": -4350.0,
+     "households": 100
+    },
+    {
+     "gross": 10960.0,
+     "net": 10960.0,
+     "households": 310
+    },
+    {
+     "gross": 11030.0,
+     "net": 6810.0,
+     "households": 60
+    },
+    {
+     "gross": 11330.0,
+     "net": 4160.0,
+     "households": 1580
+    },
+    {
+     "gross": 11570.0,
+     "net": 4680.0,
+     "households": 140
+    },
+    {
+     "gross": 11820.0,
+     "net": 6580.0,
+     "households": 240
+    },
+    {
+     "gross": 12340.0,
+     "net": 1060.0,
+     "households": 140
+    },
+    {
+     "gross": 12370.0,
+     "net": 9960.0,
+     "households": 260
+    },
+    {
+     "gross": 12450.0,
+     "net": 5080.0,
+     "households": 50
+    },
+    {
+     "gross": 12790.0,
+     "net": -410.0,
+     "households": 160
+    },
+    {
+     "gross": 13160.0,
+     "net": 9270.0,
+     "households": 70
+    },
+    {
+     "gross": 13670.0,
+     "net": 5580.0,
+     "households": 5140
+    },
+    {
+     "gross": 13740.0,
+     "net": 12590.0,
+     "households": 110
+    },
+    {
+     "gross": 13820.0,
+     "net": 9310.0,
+     "households": 70
+    },
+    {
+     "gross": 13840.0,
+     "net": 3430.0,
+     "households": 100
+    },
+    {
+     "gross": 14110.0,
+     "net": 8280.0,
+     "households": 370
+    },
+    {
+     "gross": 14230.0,
+     "net": 3050.0,
+     "households": 130
+    },
+    {
+     "gross": 14370.0,
+     "net": 9040.0,
+     "households": 290
+    },
+    {
+     "gross": 14380.0,
+     "net": 3860.0,
+     "households": 60
+    },
+    {
+     "gross": 14410.0,
+     "net": 5570.0,
+     "households": 170
+    },
+    {
+     "gross": 14480.0,
+     "net": 330.0,
+     "households": 260
+    },
+    {
+     "gross": 14530.0,
+     "net": 910.0,
+     "households": 100
+    },
+    {
+     "gross": 14630.0,
+     "net": 14630.0,
+     "households": 770
+    },
+    {
+     "gross": 14740.0,
+     "net": 4120.0,
+     "households": 70
+    },
+    {
+     "gross": 14870.0,
+     "net": 7930.0,
+     "households": 390
+    },
+    {
+     "gross": 14880.0,
+     "net": 9130.0,
+     "households": 1120
+    },
+    {
+     "gross": 15160.0,
+     "net": 3810.0,
+     "households": 50
+    },
+    {
+     "gross": 15190.0,
+     "net": 10860.0,
+     "households": 720
+    },
+    {
+     "gross": 15370.0,
+     "net": 7460.0,
+     "households": 70
+    },
+    {
+     "gross": 15710.0,
+     "net": 14410.0,
+     "households": 370
+    },
+    {
+     "gross": 15720.0,
+     "net": 3270.0,
+     "households": 50
+    },
+    {
+     "gross": 15720.0,
+     "net": 8810.0,
+     "households": 280
+    },
+    {
+     "gross": 15940.0,
+     "net": 11220.0,
+     "households": 300
+    },
+    {
+     "gross": 16100.0,
+     "net": 5220.0,
+     "households": 70
+    },
+    {
+     "gross": 16670.0,
+     "net": 3520.0,
+     "households": 50
+    },
+    {
+     "gross": 16850.0,
+     "net": 2940.0,
+     "households": 1240
+    },
+    {
+     "gross": 17250.0,
+     "net": 1530.0,
+     "households": 70
+    },
+    {
+     "gross": 17380.0,
+     "net": 11940.0,
+     "households": 80
+    },
+    {
+     "gross": 17600.0,
+     "net": 9510.0,
+     "households": 550
+    },
+    {
+     "gross": 17610.0,
+     "net": 9980.0,
+     "households": 460
+    },
+    {
+     "gross": 17720.0,
+     "net": -1060.0,
+     "households": 80
+    },
+    {
+     "gross": 17930.0,
+     "net": 1480.0,
+     "households": 310
+    },
+    {
+     "gross": 17970.0,
+     "net": 11200.0,
+     "households": 560
+    },
+    {
+     "gross": 18010.0,
+     "net": 12450.0,
+     "households": 240
+    },
+    {
+     "gross": 18090.0,
+     "net": 13440.0,
+     "households": 70
+    },
+    {
+     "gross": 18300.0,
+     "net": 8870.0,
+     "households": 130
+    },
+    {
+     "gross": 18470.0,
+     "net": 8950.0,
+     "households": 720
+    },
+    {
+     "gross": 18590.0,
+     "net": 8220.0,
+     "households": 70
+    },
+    {
+     "gross": 18630.0,
+     "net": 15830.0,
+     "households": 200
+    },
+    {
+     "gross": 18670.0,
+     "net": 2160.0,
+     "households": 480
+    },
+    {
+     "gross": 18800.0,
+     "net": -11250.0,
+     "households": 90
+    },
+    {
+     "gross": 19060.0,
+     "net": 7620.0,
+     "households": 240
+    },
+    {
+     "gross": 19580.0,
+     "net": 5080.0,
+     "households": 60
+    },
+    {
+     "gross": 19590.0,
+     "net": 1670.0,
+     "households": 450
+    },
+    {
+     "gross": 19820.0,
+     "net": 12120.0,
+     "households": 160
+    },
+    {
+     "gross": 19850.0,
+     "net": 10580.0,
+     "households": 130
+    },
+    {
+     "gross": 19970.0,
+     "net": 13450.0,
+     "households": 190
+    },
+    {
+     "gross": 20030.0,
+     "net": 7000.0,
+     "households": 80
+    },
+    {
+     "gross": 20280.0,
+     "net": 6370.0,
+     "households": 780
+    },
+    {
+     "gross": 20300.0,
+     "net": 13200.0,
+     "households": 370
+    },
+    {
+     "gross": 20430.0,
+     "net": 13480.0,
+     "households": 240
+    },
+    {
+     "gross": 20540.0,
+     "net": 7920.0,
+     "households": 110
+    },
+    {
+     "gross": 20570.0,
+     "net": 7320.0,
+     "households": 1100
+    },
+    {
+     "gross": 20690.0,
+     "net": 7730.0,
+     "households": 50
+    },
+    {
+     "gross": 20790.0,
+     "net": 12280.0,
+     "households": 390
+    },
+    {
+     "gross": 20830.0,
+     "net": 20340.0,
+     "households": 210
+    },
+    {
+     "gross": 21200.0,
+     "net": 9440.0,
+     "households": 2770
+    },
+    {
+     "gross": 21200.0,
+     "net": 7010.0,
+     "households": 220
+    },
+    {
+     "gross": 21210.0,
+     "net": 14360.0,
+     "households": 580
+    },
+    {
+     "gross": 21500.0,
+     "net": -350.0,
+     "households": 50
+    },
+    {
+     "gross": 21620.0,
+     "net": 21620.0,
+     "households": 100
+    },
+    {
+     "gross": 21770.0,
+     "net": 8480.0,
+     "households": 120
+    },
+    {
+     "gross": 21850.0,
+     "net": 3210.0,
+     "households": 120
+    },
+    {
+     "gross": 21870.0,
+     "net": 6410.0,
+     "households": 90
+    },
+    {
+     "gross": 21900.0,
+     "net": 21900.0,
+     "households": 160
+    },
+    {
+     "gross": 21950.0,
+     "net": 10080.0,
+     "households": 120
+    },
+    {
+     "gross": 22100.0,
+     "net": 12910.0,
+     "households": 290
+    },
+    {
+     "gross": 22130.0,
+     "net": 15630.0,
+     "households": 340
+    },
+    {
+     "gross": 23240.0,
+     "net": 11430.0,
+     "households": 550
+    },
+    {
+     "gross": 23290.0,
+     "net": 18230.0,
+     "households": 110
+    },
+    {
+     "gross": 23990.0,
+     "net": 14450.0,
+     "households": 1560
+    },
+    {
+     "gross": 23990.0,
+     "net": 12030.0,
+     "households": 240
+    },
+    {
+     "gross": 24290.0,
+     "net": 16520.0,
+     "households": 190
+    },
+    {
+     "gross": 24590.0,
+     "net": 3160.0,
+     "households": 170
+    },
+    {
+     "gross": 24620.0,
+     "net": 21430.0,
+     "households": 250
+    },
+    {
+     "gross": 25130.0,
+     "net": -2050.0,
+     "households": 150
+    },
+    {
+     "gross": 26350.0,
+     "net": 13310.0,
+     "households": 70
+    },
+    {
+     "gross": 26980.0,
+     "net": 18370.0,
+     "households": 60
+    },
+    {
+     "gross": 27360.0,
+     "net": 13980.0,
+     "households": 130
+    },
+    {
+     "gross": 27510.0,
+     "net": 7700.0,
+     "households": 140
+    },
+    {
+     "gross": 28640.0,
+     "net": 14940.0,
+     "households": 60
+    },
+    {
+     "gross": 28860.0,
+     "net": 25840.0,
+     "households": 850
+    },
+    {
+     "gross": 29820.0,
+     "net": 23050.0,
+     "households": 220
+    },
+    {
+     "gross": 30470.0,
+     "net": 11330.0,
+     "households": 480
+    },
+    {
+     "gross": 31340.0,
+     "net": 5240.0,
+     "households": 1140
+    },
+    {
+     "gross": 31980.0,
+     "net": 22920.0,
+     "households": 270
+    },
+    {
+     "gross": 32030.0,
+     "net": 4160.0,
+     "households": 170
+    },
+    {
+     "gross": 32160.0,
+     "net": 18480.0,
+     "households": 80
+    },
+    {
+     "gross": 32840.0,
+     "net": 20380.0,
+     "households": 90
+    },
+    {
+     "gross": 35180.0,
+     "net": 12690.0,
+     "households": 80
+    },
+    {
+     "gross": 35750.0,
+     "net": 27210.0,
+     "households": 90
+    },
+    {
+     "gross": 35820.0,
+     "net": 32450.0,
+     "households": 1080
+    },
+    {
+     "gross": 35850.0,
+     "net": 28540.0,
+     "households": 180
+    },
+    {
+     "gross": 37700.0,
+     "net": 5160.0,
+     "households": 210
+    },
+    {
+     "gross": 39370.0,
+     "net": 33010.0,
+     "households": 100
+    },
+    {
+     "gross": 41590.0,
+     "net": 29670.0,
+     "households": 100
+    },
+    {
+     "gross": 41900.0,
+     "net": 21280.0,
+     "households": 410
+    },
+    {
+     "gross": 42180.0,
+     "net": 17360.0,
+     "households": 50
+    },
+    {
+     "gross": 44400.0,
+     "net": 290.0,
+     "households": 60
+    },
+    {
+     "gross": 45150.0,
+     "net": 19630.0,
+     "households": 70
+    },
+    {
+     "gross": 45250.0,
+     "net": 33440.0,
+     "households": 570
+    },
+    {
+     "gross": 48960.0,
+     "net": 22420.0,
+     "households": 50
+    },
+    {
+     "gross": 75780.0,
+     "net": 63200.0,
+     "households": 200
+    },
+    {
+     "gross": 87710.0,
+     "net": 41920.0,
+     "households": 60
+    }
+   ]
+  }
+ },
+ "quartiles": {
+  "2024-25": {
+   "London": {
+    "gross": [
+     16360.0,
+     20940.0,
+     25460.0
+    ],
+    "councils": 23
+   },
+   "Rest of England": {
+    "gross": [
+     9880.0,
+     16670.0,
+     21880.0
+    ],
+    "councils": 159
+   }
+  }
+ },
+ "examples": [
+  {
+   "id": "typical-london",
+   "label": "A London borough",
+   "group": "London",
+   "year": "2024-25",
+   "households_about": 3100.0,
+   "gross_per_household": 20300.0,
+   "net_per_household": 9500.0,
+   "ratio_to_peer_median": 1.0,
+   "peers_lower": 11,
+   "peers_shown": 23,
+   "share_of_peers_lower_gross": 0.48,
+   "mix": [
+    {
+     "type": "Bed and breakfast",
+     "households_share": 0.05,
+     "spend_share": 0.0
+    },
+    {
+     "type": "Nightly-paid, self-contained",
+     "households_share": 0.19,
+     "spend_share": 0.71
+    },
+    {
+     "type": "Hostels",
+     "households_share": 0.01,
+     "spend_share": 0.0
+    },
+    {
+     "type": "Private sector leased",
+     "households_share": 0.7,
+     "spend_share": 0.29
+    },
+    {
+     "type": "Council or housing association stock",
+     "households_share": 0.02,
+     "spend_share": 0.0
+    },
+    {
+     "type": "Other",
+     "households_share": 0.03,
+     "spend_share": 0.0
+    }
+   ],
+   "questions": [
+    "Nothing stands out on the total: its figure is about the median of the other councils shown [Certain].",
+    "About 170 households are in bed and breakfast, but nothing is recorded on that line [Certain]. Is the cost on another line, or outside the TA lines?",
+    "About 80 households are in council or housing association stock, with nothing recorded on that line [Certain]. That stock is mostly costed outside these lines [Likely].",
+    "About 80 households are in other accommodation, but almost nothing is recorded on that line [Certain]. Is the cost on another line, or outside the TA lines?",
+    "Compare totals, not types: councils classify spend between lines differently [Likely]."
+   ]
+  },
+  {
+   "id": "typical-rest",
+   "label": "A metropolitan council",
+   "group": "Rest of England",
+   "year": "2024-25",
+   "households_about": 620.0,
+   "gross_per_household": 16800.0,
+   "net_per_household": 10100.0,
+   "ratio_to_peer_median": 1.0,
+   "peers_lower": 80,
+   "peers_shown": 159,
+   "share_of_peers_lower_gross": 0.5,
+   "mix": [
+    {
+     "type": "Bed and breakfast",
+     "households_share": 0.39,
+     "spend_share": 0.45
+    },
+    {
+     "type": "Nightly-paid, self-contained",
+     "households_share": 0.37,
+     "spend_share": 0.56
+    },
+    {
+     "type": "Hostels",
+     "households_share": 0.01,
+     "spend_share": 0.0
+    },
+    {
+     "type": "Private sector leased",
+     "households_share": 0.16,
+     "spend_share": 0.0
+    },
+    {
+     "type": "Council or housing association stock",
+     "households_share": 0.06,
+     "spend_share": -0.01
+    },
+    {
+     "type": "Other",
+     "households_share": 0.01,
+     "spend_share": 0.0
+    }
+   ],
+   "questions": [
+    "Nothing stands out on the total: its figure is about the median of the other councils shown [Certain].",
+    "About 100 households are in private sector leased homes, but nothing is recorded on that line [Certain]. Is the cost on another line, or outside the TA lines?",
+    "Compare totals, not types: councils classify spend between lines differently [Likely]."
+   ]
+  }
+ ],
+ "patterns": [
+  {
+   "pattern_id": "in_tables",
+   "section": "coverage",
+   "pattern": "Councils in the tables",
+   "may_mean": "Housing authorities in both MHCLG tables for 2024-25 [Certain].",
+   "london": 33,
+   "rest_of_england": 263,
+   "england": 296
+  },
+  {
+   "pattern_id": "not_shown",
+   "section": "coverage",
+   "pattern": "Not shown as dots",
+   "may_mean": "Not compared: two or more of the five counts missing, no positive spend on lines 80 to 85, or fewer than 50 households on average [Certain]. Or left out until a person checks them: councils averaging at least 100 households whose count changes by more than 40% between quarters, or with nothing on lines 80 to 86 in 2024-25 or 2025-26 [Certain on the rules]. A change that size may be a reporting slip or a real move [Likely].",
+   "london": 9,
+   "rest_of_england": 103,
+   "england": 112
+  },
+  {
+   "pattern_id": "left_out",
+   "section": "coverage",
+   "pattern": "Of these, left out for a data check",
+   "may_mean": "Given for England only. Councils are unnamed, not anonymous: each dot matches one council in MHCLG's published tables [Certain].",
+   "london": null,
+   "rest_of_england": null,
+   "england": 8
+  },
+  {
+   "pattern_id": "shown",
+   "section": "coverage",
+   "pattern": "Shown",
+   "may_mean": "The councils on the chart: each example, and the grey dots behind its band and median [Certain].",
+   "london": 24,
+   "rest_of_england": 160,
+   "england": 184
+  },
+  {
+   "pattern_id": "far_above",
+   "section": "pattern",
+   "pattern": "More than twice the median of all the councils shown in the group, with at least 100 households",
+   "may_mean": "The spend may cover households the count does not, be classified differently, or prices may be higher [Likely].",
+   "london": 0,
+   "rest_of_england": 8,
+   "england": 8
+  },
+  {
+   "pattern_id": "far_below",
+   "section": "pattern",
+   "pattern": "Under a quarter of the median of all the councils shown in the group",
+   "may_mean": "Spend is probably recorded outside the TA lines, or placements are mostly in cheaper types [Likely].",
+   "london": 0,
+   "rest_of_england": 14,
+   "england": 14
+  },
+  {
+   "pattern_id": "spend_without_households",
+   "section": "pattern",
+   "pattern": "More than a quarter of spend on types where the council reports fewer than one household",
+   "may_mean": "Spend and households classified on different lines; compare totals, not types [Likely].",
+   "london": 0,
+   "rest_of_england": 14,
+   "england": 14
+  },
+  {
+   "pattern_id": "estimated",
+   "section": "pattern",
+   "pattern": "One of the five counts missing",
+   "may_mean": "The missing count is estimated, between its neighbours or, for the first or last count, copied from the nearest one, so the yearly average is an estimate [Certain].",
+   "london": 8,
+   "rest_of_england": 9,
+   "england": 17
+  }
+ ]
+}

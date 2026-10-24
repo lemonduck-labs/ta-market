@@ -1,0 +1,22 @@
+[
+ {
+  "year": "2024-25",
+  "households": 125235,
+  "gross_accom": 2652506638.0,
+  "net_accom": 1263750319.0,
+  "ta_total": 2823857788.0,
+  "gross_per_household": 21180.0,
+  "net_per_household": 10090.0,
+  "first_release": false
+ },
+ {
+  "year": "2025-26",
+  "households": 133604,
+  "gross_accom": 2728665469.0,
+  "net_accom": 1312165113.0,
+  "ta_total": 2934629171.0,
+  "gross_per_household": 20420.0,
+  "net_per_household": 9820.0,
+  "first_release": true
+ }
+]

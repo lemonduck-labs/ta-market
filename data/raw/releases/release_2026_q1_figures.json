@@ -1,0 +1,64 @@
+{
+ "release": "Statutory homelessness in England: January to March 2026",
+ "publisher": "Ministry of Housing, Communities and Local Government",
+ "url": "https://www.gov.uk/government/statistics/statutory-homelessness-in-england-january-to-march-2026/statutory-homelessness-in-england-january-to-march-2026",
+ "published": "13 August 2026",
+ "read_on": "21 October 2026; every figure re-read against the page on 22 October 2026",
+ "method": "Transcribed by hand from the release page, which is text, not a download: the checksum in the ingest log is of this file, not of the page.",
+ "licence": "Open Government Licence v3.0",
+ "used_by": "tamarket/synthetic.py (the synthetic caseload's assumptions) and the planner's Method view",
+ "figures": [
+  {
+   "figure": "135,580",
+   "says": "households in temporary accommodation on 31 March 2026"
+  },
+  {
+   "figure": "86,460 (63.8%)",
+   "says": "of those households contained children"
+  },
+  {
+   "figure": "49,120 (36.2%)",
+   "says": "of those households contained adults only"
+  },
+  {
+   "figure": "177,530",
+   "says": "children living in temporary accommodation on 31 March 2026"
+  },
+  {
+   "figure": "1,900",
+   "says": "households in B&B accommodation on 31 March 2026 contained children"
+  },
+  {
+   "figure": "10,320 (84.5%)",
+   "says": "of the households in B&B were adult only households"
+  },
+  {
+   "figure": "22,060 (25.5%)",
+   "says": "households with children in temporary accommodation for 2 to 5 years, the most common length of time for them"
+  },
+  {
+   "figure": "16,280 (32.2%)",
+   "says": "adult only households in temporary accommodation for less than 6 months, the most common length of time for them"
+  },
+  {
+   "figure": "9,020 (56.2%)",
+   "says": "households owed a main duty with a priority need because the household included dependent children"
+  },
+  {
+   "figure": "51,280 (61.8%)",
+   "says": "households owed a prevention or relief duty with one or more support needs"
+  },
+  {
+   "figure": "30.6%",
+   "says": "of them had a history of mental health problems"
+  },
+  {
+   "figure": "24.1%",
+   "says": "of them had physical ill health and disability"
+  },
+  {
+   "figure": "13.4%",
+   "says": "of them were at risk of or had experienced domestic abuse"
+  }
+ ]
+}

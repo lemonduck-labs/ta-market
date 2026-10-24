@@ -1,0 +1,57 @@
+{
+ "about": "Tags a monitoring item may carry, written by scripts/monitor.py vocab from tamarket/spec.",
+ "checks": [
+  "general.duty",
+  "general.wishes",
+  "bnb-family-limit",
+  "bnb-young-applicant",
+  "bnb-care-leaver",
+  "young-applicant-children-services",
+  "out-of-district",
+  "space-and-affordability",
+  "medical-needs",
+  "social-housing.c1",
+  "social-housing.c2",
+  "social-housing.c3",
+  "social-housing.c4",
+  "prs-offer.c1",
+  "prs-offer.c2",
+  "prs-offer.c3",
+  "prs-offer.c4",
+  "prs-offer.c5",
+  "prs-offer.c6",
+  "supported-housing.c1",
+  "supported-housing.c2",
+  "supported-housing.c3"
+ ],
+ "pathways": [
+  "social-housing",
+  "prs-offer",
+  "supported-housing"
+ ],
+ "references": [
+  "code-overview",
+  "code-ch15",
+  "code-ch17",
+  "ha1996-s193",
+  "ha1996-s208",
+  "allocation-guidance",
+  "live-tables"
+ ],
+ "clocks": [
+  "s208",
+  "child",
+  "bnb_family",
+  "review"
+ ],
+ "topics": [
+  "release",
+  "guidance",
+  "legislation",
+  "ombudsman",
+  "notices",
+  "suitability",
+  "reviews",
+  "private_renting"
+ ]
+}

@@ -1,0 +1,42 @@
+[
+ {
+  "question_id": "typical-london-1",
+  "id": "typical-london",
+  "question": "Nothing stands out on the total: its figure is about the median of the other councils shown [Certain]."
+ },
+ {
+  "question_id": "typical-london-2",
+  "id": "typical-london",
+  "question": "About 170 households are in bed and breakfast, but nothing is recorded on that line [Certain]. Is the cost on another line, or outside the TA lines?"
+ },
+ {
+  "question_id": "typical-london-3",
+  "id": "typical-london",
+  "question": "About 80 households are in council or housing association stock, with nothing recorded on that line [Certain]. That stock is mostly costed outside these lines [Likely]."
+ },
+ {
+  "question_id": "typical-london-4",
+  "id": "typical-london",
+  "question": "About 80 households are in other accommodation, but almost nothing is recorded on that line [Certain]. Is the cost on another line, or outside the TA lines?"
+ },
+ {
+  "question_id": "typical-london-5",
+  "id": "typical-london",
+  "question": "Compare totals, not types: councils classify spend between lines differently [Likely]."
+ },
+ {
+  "question_id": "typical-rest-1",
+  "id": "typical-rest",
+  "question": "Nothing stands out on the total: its figure is about the median of the other councils shown [Certain]."
+ },
+ {
+  "question_id": "typical-rest-2",
+  "id": "typical-rest",
+  "question": "About 100 households are in private sector leased homes, but nothing is recorded on that line [Certain]. Is the cost on another line, or outside the TA lines?"
+ },
+ {
+  "question_id": "typical-rest-3",
+  "id": "typical-rest",
+  "question": "Compare totals, not types: councils classify spend between lines differently [Likely]."
+ }
+]

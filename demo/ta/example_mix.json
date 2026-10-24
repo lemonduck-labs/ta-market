@@ -1,0 +1,86 @@
+[
+ {
+  "example_type": "typical-london|Bed and breakfast",
+  "id": "typical-london",
+  "type": "Bed and breakfast",
+  "households_share": 0.05,
+  "spend_share": 0.0
+ },
+ {
+  "example_type": "typical-london|Nightly-paid, self-contained",
+  "id": "typical-london",
+  "type": "Nightly-paid, self-contained",
+  "households_share": 0.19,
+  "spend_share": 0.71
+ },
+ {
+  "example_type": "typical-london|Hostels",
+  "id": "typical-london",
+  "type": "Hostels",
+  "households_share": 0.01,
+  "spend_share": 0.0
+ },
+ {
+  "example_type": "typical-london|Private sector leased",
+  "id": "typical-london",
+  "type": "Private sector leased",
+  "households_share": 0.7,
+  "spend_share": 0.29
+ },
+ {
+  "example_type": "typical-london|Council or housing association stock",
+  "id": "typical-london",
+  "type": "Council or housing association stock",
+  "households_share": 0.02,
+  "spend_share": 0.0
+ },
+ {
+  "example_type": "typical-london|Other",
+  "id": "typical-london",
+  "type": "Other",
+  "households_share": 0.03,
+  "spend_share": 0.0
+ },
+ {
+  "example_type": "typical-rest|Bed and breakfast",
+  "id": "typical-rest",
+  "type": "Bed and breakfast",
+  "households_share": 0.39,
+  "spend_share": 0.45
+ },
+ {
+  "example_type": "typical-rest|Nightly-paid, self-contained",
+  "id": "typical-rest",
+  "type": "Nightly-paid, self-contained",
+  "households_share": 0.37,
+  "spend_share": 0.56
+ },
+ {
+  "example_type": "typical-rest|Hostels",
+  "id": "typical-rest",
+  "type": "Hostels",
+  "households_share": 0.01,
+  "spend_share": 0.0
+ },
+ {
+  "example_type": "typical-rest|Private sector leased",
+  "id": "typical-rest",
+  "type": "Private sector leased",
+  "households_share": 0.16,
+  "spend_share": 0.0
+ },
+ {
+  "example_type": "typical-rest|Council or housing association stock",
+  "id": "typical-rest",
+  "type": "Council or housing association stock",
+  "households_share": 0.06,
+  "spend_share": -0.01
+ },
+ {
+  "example_type": "typical-rest|Other",
+  "id": "typical-rest",
+  "type": "Other",
+  "households_share": 0.01,
+  "spend_share": 0.0
+ }
+]
