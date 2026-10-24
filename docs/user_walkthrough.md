@@ -27,10 +27,10 @@ The participant brings nothing and types nothing from their work.
 
 ## 2. Before the session (for the owner)
 
-**The link.** The demo site's planner page: `<demo site address>/planner/`. Nothing to install,
-no sign-in. Open the planner itself, not the site's front page, so the session starts on the
-caseload. The site is not published yet (diversion-radar's `site/README.md` lists the steps):
-put the address here once it is. Until then, an in-person session can run from a local copy on
+**The link.** The demo site's planner page: `https://lemonduck-labs.netlify.app/planner/`.
+Nothing to install, no sign-in. Open the planner itself, not the site's front page, so the
+session starts on the caseload. The site was published on 24 October 2026 (diversion-radar's
+`site/README.md`). An in-person session can also run from a local copy on
 your own laptop: in diversion-radar, build the site (`python scripts/build_site.py`, with
 ta-market beside it; add `--clean` for the copy you publish), serve it
 with `python -m http.server 8000 --directory site/dist`, and open

@@ -35,7 +35,7 @@ Commands: `/pull`, `/picture`, `/review`, `/ship` (`WORKFLOW.md`).
 
 ## What the reviews caught
 
-A few of the points the independent reviews raised, each fixed before the build moved on:
+A few of the points the independent reviews raised, each fixed before the work was shared:
 
 - The draft notice to a child's GP practice carried the family's temporary address. The DHSC
   guidance on the notification duty says GP notifications do not include it.
